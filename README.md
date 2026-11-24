@@ -7,7 +7,7 @@ Dua simulasi web interaktif:
 | File | Isi |
 |---|---|
 | `index.html` | Halaman beranda (landing page) |
-| `mydata-korea.html` | Simulasi MyData Korea Selatan: data dikirim atas perintah warga |
+| `mydata-korea.html` | Simulasi PISS + MyData Korea Selatan: berbagi dokumen antarinstansi dan data atas perintah warga |
 | `conecta-govbr.html` | Simulasi Conecta gov.br Brasil: gerbang API antarinstansi |
 
 Setiap simulasi punya tombol **Indonesia** untuk memetakan komponen ke padanannya di Indonesia.

@@ -63,7 +63,7 @@ footer{color:var(--mute);font-size:14px;border-top:1px solid var(--line)}
  <div class="wrap">
   <p class="kicker">Tugas Pengolahan Data untuk Pemerintahan · DTETI UGM</p>
   <h1>Simulasi arsitektur pertukaran data pemerintah</h1>
-  <p>Dua simulasi interaktif untuk memahami bagaimana data warga berpindah antarlembaga: model yang dikendalikan warga dari Korea Selatan, dan model gerbang API antarinstansi dari Brasil. Keduanya bisa dibandingkan langsung dengan kondisi Indonesia.</p>
+  <p>Dua simulasi interaktif untuk memahami bagaimana data warga berpindah antarlembaga: model dua lapis dari Korea Selatan (berbagi antarinstansi lalu kendali warga), dan model gerbang API antarinstansi dari Brasil. Keduanya bisa dibandingkan langsung dengan kondisi Indonesia.</p>
   <div class="team"><span>Ayu Putri Megawati</span><span>Bagus Banjar Bagaskara</span><span>Semuel Kaseh</span><span>Waode Anti</span></div>
  </div>
 </header>
@@ -72,7 +72,7 @@ footer{color:var(--mute);font-size:14px;border-top:1px solid var(--line)}
  <section class="band" style="padding-top:0">
   <div class="wrap cards">
    <article class="card">
-    <a class="art" href="mydata-korea.html" aria-label="Buka simulasi MyData Korea Selatan">
+    <a class="art" href="mydata-korea.html" aria-label="Buka simulasi PISS dan MyData Korea Selatan">
      <svg viewBox="0 0 400 200" role="img" aria-label="Miniatur: ponsel warga di tengah mengarahkan data dari pemegang data ke penerima">
       <g fill="#fff" stroke="#c9d2de"><rect x="28" y="40" width="96" height="26" rx="6"/><rect x="28" y="78" width="96" height="26" rx="6"/><rect x="28" y="116" width="96" height="26" rx="6"/>
       <rect x="276" y="56" width="96" height="26" rx="6"/><rect x="276" y="100" width="96" height="26" rx="6"/></g>
@@ -87,16 +87,17 @@ footer{color:var(--mute);font-size:14px;border-top:1px solid var(--line)}
     </a>
     <div class="cbody">
      <span class="flag">Korea Selatan</span>
-     <h2>MyData</h2>
-     <p>Warga memerintahkan agar datanya dikirim dari bank, kantor pajak, atau rumah sakit ke pihak pilihannya, lewat API standar dengan persetujuan yang bisa dicabut.</p>
+     <h2>PISS + MyData</h2>
+     <p>Dua lapisan: <strong>PISS</strong> membuat petugas melihat dokumen warga langsung di instansi pemiliknya, sehingga warga tak perlu fotokopi. <strong>MyData</strong> membuat warga memerintahkan datanya dikirim ke pihak pilihannya lewat API standar.</p>
      <ul class="sc">
-      <li><b>1</b>MyData keuangan sampai dasbor terpadu</li>
-      <li><b>2</b>Scraping vs API standar</li>
-      <li><b>3</b>MyData publik ke dompet dokumen bank</li>
-      <li><b>4</b>Kesehatan lewat lembaga perantara</li>
-      <li><b>5</b>Melihat dan mencabut persetujuan</li>
+      <li><b>1</b>PISS: petugas melihat dokumen lewat hub</li>
+      <li><b>2</b>MyData keuangan sampai dasbor terpadu</li>
+      <li><b>3</b>Scraping vs API standar</li>
+      <li><b>4</b>MyData publik ke dompet dokumen bank</li>
+      <li><b>5</b>Kesehatan lewat lembaga perantara</li>
+      <li><b>6</b>Melihat dan mencabut persetujuan</li>
      </ul>
-     <div class="go"><a class="btn" href="mydata-korea.html">Buka simulasi MyData <span aria-hidden="true">→</span></a></div>
+     <div class="go"><a class="btn" href="mydata-korea.html">Buka simulasi Korea <span aria-hidden="true">→</span></a></div>
     </div>
    </article>
 
@@ -146,11 +147,11 @@ footer{color:var(--mute);font-size:14px;border-top:1px solid var(--line)}
   <div class="wrap">
    <h3>Sekilas perbandingan</h3>
    <table class="stack">
-    <thead><tr><th>Dimensi</th><th>MyData Korea</th><th>Conecta Brasil</th><th>Indonesia saat ini</th></tr></thead>
+    <thead><tr><th>Dimensi</th><th>Korea · PISS + MyData</th><th>Conecta Brasil</th><th>Indonesia saat ini</th></tr></thead>
     <tbody>
-     <tr><td data-l="Dimensi">Pola</td><td data-l="Korea">Portabilitas atas perintah warga</td><td data-l="Brasil">API gateway pusat + katalog</td><td data-l="Indonesia">SPLP (gateway pusat), banyak integrasi bilateral</td></tr>
-     <tr><td data-l="Dimensi">Peran warga</td><td data-l="Korea">Inti arsitektur</td><td data-l="Brasil">Hanya di jalur swasta (Conecta+)</td><td data-l="Indonesia">Belum ada</td></tr>
-     <tr><td data-l="Dimensi">Pelajaran utama</td><td data-l="Korea">API standar wajib, persetujuan standar, portal cabut izin</td><td data-l="Brasil">Prosedur akses seragam, level berbagi, ukur penghematan</td><td data-l="Indonesia">Perbaiki tata kelola SPLP, lalu tambah kendali warga</td></tr>
+     <tr><td data-l="Dimensi">Pola</td><td data-l="Korea">Hub antarinstansi (PISS) + portabilitas atas perintah warga (MyData)</td><td data-l="Brasil">API gateway pusat + katalog</td><td data-l="Indonesia">SPLP (gateway pusat), banyak integrasi bilateral</td></tr>
+     <tr><td data-l="Dimensi">Peran warga</td><td data-l="Korea">Setuju per permohonan (PISS); inti arsitektur (MyData)</td><td data-l="Brasil">Hanya di jalur swasta (Conecta+)</td><td data-l="Indonesia">Belum ada</td></tr>
+     <tr><td data-l="Dimensi">Pelajaran utama</td><td data-l="Korea">Daftar 181 dokumen yang dilarang diminta ulang; API standar wajib dan portal cabut izin</td><td data-l="Brasil">Prosedur akses seragam, level berbagi, ukur penghematan</td><td data-l="Indonesia">Perbaiki tata kelola SPLP, lalu tambah kendali warga</td></tr>
     </tbody>
    </table>
   </div>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Simulasi MyData Korea</title>
+<title>Simulasi PISS + MyData Korea</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -34,7 +34,7 @@ button{font:inherit;cursor:pointer}
 .mode button[aria-pressed=true]{background:var(--red);color:#fff}
 button:focus-visible{outline:3px solid var(--red);outline-offset:2px}
 .stage{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,300px) minmax(0,1fr);grid-template-areas:"hub hub hub" "prov ph rec";gap:16px 20px;background:var(--soft);border-radius:16px;padding:18px}
-.hub{grid-area:hub;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.hub{grid-area:hub;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
 .hub h2{grid-column:1/-1}
 .prov{grid-area:prov}.rec{grid-area:rec}.phw{grid-area:ph;display:flex;justify-content:center;align-items:flex-start}
 .col{display:flex;flex-direction:column;gap:10px}
@@ -101,8 +101,8 @@ h2{font-size:13px;font-weight:700;color:var(--mute);margin:0}
 <header class="band">
  <div class="wrap">
   <a href="index.html" style="display:inline-block;margin-bottom:12px;color:inherit;opacity:.85;font-size:15px;text-decoration:none">← Kembali ke beranda</a>
-  <h1>Simulasi MyData Korea Selatan (마이데이터)</h1>
-  <p>Arah alirannya terbalik dari model sebelumnya: <strong>warga</strong> yang memerintahkan agar datanya dikirim dari pemegang data (bank, kantor pajak, rumah sakit) ke pihak yang ia pilih, melalui API standar, dengan persetujuan yang tercatat dan bisa dicabut. Tombol <strong>Indonesia</strong> memetakan padanannya.</p>
+  <h1>Simulasi PISS + MyData Korea Selatan</h1>
+  <p>Korea punya dua lapisan. <strong>PISS</strong> (행정정보 공동이용, sejak 2003): petugas instansi melihat dokumen warga langsung di instansi pemiliknya lewat hub pusat, sehingga warga tidak membawa fotokopi. <strong>MyData</strong> (sejak 2021–2022): <strong>warga</strong> memerintahkan datanya dikirim ke pihak pilihannya, termasuk swasta, lewat API standar dengan persetujuan yang bisa dicabut. Tombol <strong>Indonesia</strong> memetakan padanannya.</p>
   <div class="controls" id="controls"></div>
  </div>
 </header>
@@ -113,7 +113,7 @@ h2{font-size:13px;font-weight:700;color:var(--mute);margin:0}
    <div class="hub" id="z-hub"><h2>Infrastruktur pendukung</h2></div>
    <div class="col prov"><h2>Pemegang data (정보제공자)</h2><div class="col" id="z-prov"></div></div>
    <div class="phw"><div class="phone node" id="n-ph" data-id="ph" role="button" tabindex="0" aria-label="Ponsel warga"><div class="screen" id="screen"></div></div></div>
-   <div class="col rec"><h2>Penerima yang dipilih warga (수신자)</h2><div class="col" id="z-rec"></div></div>
+   <div class="col rec"><h2>Pengguna / penerima data (수신자)</h2><div class="col" id="z-rec"></div></div>
   </div>
   <div class="legend">
    <span style="--c:var(--red)">Permintaan / perintah warga</span><span style="--c:var(--blue)">Data dikirim</span><span style="--c:var(--good)">Riwayat / event</span><span style="--c:var(--bad)">Ditolak / dicabut</span>
@@ -144,6 +144,8 @@ h2{font-size:13px;font-weight:700;color:var(--mute);margin:0}
 <script>
 {
 const N=[
+ {id:'pisc',z:'hub',kr:['PISC · hub PISS','행정정보 공동이용센터 · Kemendagri (MOIS)','Setujui akses · 181 dokumen · log'],ix:['SPLP + SKDN','Gateway & katalog pusat','Belum ada daftar dokumen wajib berbagi'],st:'part',
+  info:{kr:'Public Information Sharing Center: hub yang menyetujui instansi mana boleh melihat dokumen apa, mengelola daftar resmi 181 jenis dokumen yang wajib dipakai bersama, menjalankan sistemnya, dan mencatat setiap akses. Dasarnya Bab 4 UU E-Government dan larangan meminta dokumen yang tidak perlu dalam UU Penanganan Petisi Sipil.',ix:'SPLP dan SKDN mirip secara teknis. Yang belum ada: daftar resmi dokumen yang wajib dipakai bersama dan larangan hukum bagi instansi untuk meminta fotokopi dokumen tersebut dari warga.'}},
  {id:'auth',z:'hub',kr:['Autentikasi terpadu','통합인증 · sekali login untuk semua penyedia','Sertifikat / ID seluler'],ix:['IKD / INApas','Identitas digital nasional','Belum terhubung ke skema MyData'],st:'part',
   info:{kr:'Warga cukup sekali melakukan autentikasi (misalnya sertifikat digital atau ID seluler), lalu semua penyedia yang dipilih menerbitkan token akses. Tanpa ini, warga harus login satu per satu ke puluhan bank.',ix:'IKD/INApas bisa menjadi fondasinya, tetapi belum dipakai sebagai autentikasi terpadu untuk memerintahkan pengiriman data antarlembaga.'}},
  {id:'kcis',z:'hub',kr:['Pusat dukungan MyData keuangan','Registri operator, riwayat transfer, portal persetujuan','Korea Credit Information Services'],ix:['Pusat MyData keuangan','Belum ada','SNAP BI baru untuk pembayaran'],st:'no',
@@ -152,11 +154,14 @@ const N=[
   info:{kr:'Warga meminta instansi pemerintah mengirim informasi administratif tentang dirinya (misalnya data penghasilan atau iuran asuransi) dalam bentuk data ke dirinya sendiri atau ke pihak ketiga, termasuk swasta, tanpa dokumen kertas.',ix:'Di Indonesia, bank dan lembaga lain mendapat hak akses verifikasi data kependudukan lewat perjanjian kerja sama dengan Dukcapil. Arah inisiatifnya dari lembaga, bukan warga, dan warga tidak melihat riwayat aksesnya.'}},
  {id:'pipc',z:'hub',kr:['Platform portabilitas umum','PIPC · lembaga perantara spesialis','UU PIPA, amandemen 2023'],ix:['Hak portabilitas (UU PDP)','Ada di undang-undang','Belum ada infrastruktur'],st:'part',
   info:{kr:'Hak portabilitas data di UU Perlindungan Data Pribadi (PIPA) diperluas bertahap per sektor: kesehatan dan telekomunikasi lebih dulu, lalu pendidikan dan ketenagakerjaan. Lembaga perantara spesialis membantu pengiriman dari pemegang data yang tidak punya API sendiri.',ix:'UU PDP (UU 27/2022) sudah memuat hak subjek data untuk mendapatkan dan memindahkan datanya ke pengendali lain. Yang belum ada: standar teknis per sektor, lembaga perantara, dan kewajiban penyedia menyediakan API.'}},
+ {id:'mois',z:'prov',kr:['Register kependudukan','주민등록 · salinan register penduduk','Pemilik dokumen (PISS)'],ix:['Dukcapil','KK, biodata (NIK)','Sudah dipakai lintas instansi'],st:'ok'},
  {id:'b1',z:'prov',kr:['Bank A','Rekening & pinjaman','API standar MyData'],ix:['Bank A','Rekening & pinjaman','API per bank, belum seragam'],st:'part'},
  {id:'c1',z:'prov',kr:['Kartu kredit B','Transaksi & tagihan','API standar MyData'],ix:['Penerbit kartu B','Transaksi & tagihan','Belum wajib membuka API'],st:'no'},
  {id:'nts',z:'prov',kr:['Badan Pajak Nasional','국세청 · bukti penghasilan','Instansi pemerintah'],ix:['DJP','Bukti potong / SPT','Belum bisa dikirim atas perintah warga'],st:'no'},
  {id:'nhis',z:'prov',kr:['Asuransi Kesehatan Nasional','건강보험공단 · riwayat iuran','Instansi pemerintah'],ix:['BPJS Kesehatan','Status & iuran kepesertaan','Belum bisa dikirim atas perintah warga'],st:'no'},
  {id:'hos',z:'prov',kr:['Rumah sakit umum','Rekam medis','Wajib melayani permintaan transfer'],ix:['Rumah sakit','Rekam medis (SATUSEHAT)','Terintegrasi ke platform pemerintah'],st:'part'},
+ {id:'off',z:'rec',kr:['Kantor layanan (petugas)','Mis. kantor paspor / izin usaha','Pengguna PISS (857 lembaga)'],ix:['Kantor layanan publik','Masih minta fotokopi KTP/KK','Bisa verifikasi NIK, tetap minta kertas'],st:'part',
+  info:{kr:'Instansi, lembaga publik, atau bank yang disetujui PISC untuk melihat dokumen tertentu saat memproses permohonan. Petugas membuka dokumen di layar dan dilarang meminta warga menyerahkannya.',ix:'Banyak kantor layanan sudah bisa memverifikasi NIK, tetapi tetap meminta fotokopi KTP/KK karena tidak ada larangan tegas dan daftar dokumen yang wajib dipakai bersama.'}},
  {id:'op',z:'rec',kr:['Aplikasi MyData "Dompetku"','Operator MyData berizin','마이데이터 사업자'],ix:['Aplikasi agregator keuangan','Belum ada izin & standar khusus',''],st:'no'},
  {id:'bank',z:'rec',kr:['Bank C (pengajuan kredit)','Penerima data publik','Dompet dokumen elektronik'],ix:['Bank C (pengajuan kredit)','Biasanya minta fotokopi dokumen',''],st:'part'},
  {id:'happ',z:'rec',kr:['Aplikasi kesehatan','Penerima umum','lewat lembaga spesialis'],ix:['Aplikasi kesehatan pihak ketiga','Belum ada jalur resmi',''],st:'no'},
@@ -168,6 +173,9 @@ const T={kr:{ident:'CI (connecting information)',auth:'Autentikasi terpadu'},ix:
 const fill=s=>s.replace(/\{(\w+)\}/g,(m,k)=>T[mode][k]??(N.some(x=>x.id==k)||k=='ph'?nm(k):m));
 const won=v=>'₩'+v.toLocaleString('id-ID');
 const SCR={
+ pisshome:()=>`<div class="app"><span>Kantor layanan</span><span>Loket</span></div><h4>Permohonan izin usaha</h4><p class="small">Dulu: bawa salinan register penduduk dan bukti lunas pajak dari dua kantor lain.</p><div class="row"><span>Salinan register penduduk</span><span>wajib dibawa</span></div><div class="row"><span>Bukti lunas pajak</span><span>wajib dibawa</span></div>`,
+ pissconsent:()=>`<div class="app"><span>Formulir</span><span>행정정보 공동이용 동의</span></div><h4>Persetujuan pemanfaatan bersama</h4><p class="small">Saya setuju petugas memeriksa dokumen berikut lewat sistem, sehingga saya tidak perlu menyerahkannya.</p><div><span class="chip">Register penduduk</span><span class="chip">Bukti lunas pajak</span></div><div class="cta">Tanda tangan</div><p class="small">Bila menolak: warga wajib membawa dokumennya sendiri.</p>`,
+ pissdone:()=>`<div class="app"><span>Kantor layanan</span><span>Selesai</span></div><h4>Diproses tanpa kertas ✓</h4><div class="row"><span>Register penduduk</span><span>dilihat petugas</span></div><div class="row"><span>Bukti lunas pajak</span><span>dilihat petugas</span></div><p class="small">Akses tercatat di PISC. Warga tidak menyimpan atau mengirim dokumen apa pun.</p>`,
  home:()=>`<div class="app"><span>Dompetku</span><span>09:41</span></div><h4>Hubungkan data Anda</h4><p class="small">Pilih lembaga yang datanya ingin Anda kumpulkan di sini.</p><div class="row"><span>Bank A</span><span>○</span></div><div class="row"><span>Kartu kredit B</span><span>○</span></div><div class="cta">Mulai</div>`,
  auth:()=>`<div class="app"><span>${fill('{auth}')}</span><span>09:41</span></div><h4>Sekali autentikasi</h4><p class="small">Satu kali verifikasi berlaku untuk semua lembaga yang Anda pilih.</p><div class="row"><span>Bank A</span><span>✓</span></div><div class="row"><span>Kartu kredit B</span><span>✓</span></div><div class="cta">Verifikasi</div>`,
  consent:()=>`<div class="app"><span>Dompetku</span><span>Formulir standar</span></div><h4>Persetujuan pengiriman data</h4><div class="row"><span>Penerima</span><span>Dompetku</span></div><div class="row"><span>Tujuan</span><span>Kelola aset</span></div><div><span class="chip">Saldo</span><span class="chip">Transaksi</span><span class="chip">Tagihan</span></div><div class="row"><span>Berlaku</span><span>1 tahun</span></div><div class="row"><span>Pengiriman berkala</span><span>Ya</span></div><div class="cta">Setuju & kirim</div>`,
@@ -182,7 +190,15 @@ const SCR={
  revoked:()=>`<div class="app"><span>Portal MyData</span><span>Riwayat</span></div><h4>Persetujuan diperbarui</h4><div class="row"><span>Bank A → Dompetku</span><span>Aktif</span></div><div class="row"><span>Kartu B → Dompetku</span><span><span class="chip x">Dicabut</span></span></div><p class="small">Dompetku wajib menghapus data Kartu B yang sudah diterima.</p>`,
 };
 const SC=[
- {name:'1 · MyData keuangan',start:'home',steps:[
+ {name:'1 · PISS antarinstansi',start:'pisshome',steps:[
+  {from:'ph',to:'off',k:'req',t:'Warga mengajukan izin usaha',b:'Warga datang ke kantor layanan untuk mengurus izin usaha. Dulu ia harus mengambil salinan register penduduk dan bukti lunas pajak di dua kantor lain, lalu menyerahkannya ke kantor ini.',log:{h:'{ph} → {off}',p:'Permohonan izin usaha · dokumen pendukung: 2'}},
+  {from:'ph',to:'off',k:'event',scr:'pissconsent',t:'Persetujuan pemanfaatan bersama',b:'Warga menandatangani persetujuan agar petugas memeriksa dokumen yang memuat data pribadinya lewat sistem. Persetujuan ini berlaku untuk permohonan ini saja. Bila menolak, warga harus membawa dokumennya sendiri.',log:{h:'{ph} → {off}',p:'동의서 (persetujuan) · lingkup: register penduduk, bukti lunas pajak'},idn:'Di Indonesia, persetujuan seperti ini jarang diminta secara eksplisit. Masalah yang lebih besar justru sebaliknya: kantor tetap meminta fotokopi walau datanya bisa diverifikasi.'},
+  {from:'off',to:'pisc',k:'req',t:'Petugas meminta lewat hub',b:'Petugas membuka sistem PISS. {pisc} memeriksa apakah <strong>layanan izin usaha</strong> di kantor ini sudah disetujui untuk melihat kedua jenis dokumen tersebut. Kedua dokumen termasuk dalam daftar resmi 181 jenis.',log:{h:'{off} → {pisc}',p:'request { layanan: "izin usaha", dokumen: ["주민등록표","납세증명"],\n  pemohon: "nomor penduduk (terenkripsi)", petugas: "pegawai-0417", persetujuan: true }\n→ cek izin pemanfaatan: DISETUJUI'},idn:'Padanan terdekat adalah SPLP, tetapi Indonesia belum punya daftar resmi dokumen yang wajib bisa dipakai bersama beserta persetujuan per layanan.'},
+  {from:'pisc',to:['mois','nts'],k:'req',t:'Hub meneruskan ke pemilik dokumen',b:'Permintaan diteruskan ke {mois} dan {nts}. Data tetap di instansi pemiliknya. Hub hanya perantara yang memeriksa izin dan mencatat.',log:{h:'{pisc} → {mois}, {nts}',p:'GET 주민등록표 등본 · GET 납세증명서'}},
+  {from:['mois','nts'],to:'pisc',k:'resp',t:'Dokumen dikembalikan',b:'Pemilik mengirim dokumen terbaru dari sumbernya, bukan salinan lama yang bisa saja sudah basi atau dipalsukan.',log:{h:'{mois}, {nts} → {pisc}',p:'200 dokumen (tampilan terlindung, tidak bisa diunduh bebas)'}},
+  {from:'pisc',to:'off',k:'resp',scr:'pissdone',t:'Petugas melihat di layar',b:'Petugas melihat dokumen di layar dan memproses izin. Setiap akses tercatat. Catatan: di PISS, data <strong>dilihat oleh instansi</strong>; warga tidak menerima datanya. Kekurangan inilah yang kemudian dilengkapi MyData.',log:{h:'{pisc} → {off}',p:'tampil di layar petugas · log: 2026-11-24 10:05 pegawai-0417 izin-usaha'},idn:'Di Indonesia, langkah terakhir ini sering masih diganti dengan fotokopi dan stempel basah.'},
+ ]},
+ {name:'2 · MyData keuangan',start:'home',steps:[
   {from:'ph',to:'auth',k:'req',scr:'auth',t:'Sekali autentikasi',b:'Warga membuka aplikasi operator MyData berizin, memilih Bank A dan Kartu B, lalu cukup sekali melakukan {auth}. Warga dikenali lintas lembaga lewat pengenal {ident}, bukan dengan menyerahkan kata sandi bank.',log:{h:'{ph} → {auth}',p:'POST /auth  method=certificate\n→ ci=Xy7Q…(hash pengenal)  ok'}},
   {from:'ph',to:'op',k:'req',scr:'consent',t:'Persetujuan dengan formulir standar',b:'Persetujuan memakai <strong>format standar</strong> yang sama di semua operator: siapa penerimanya, untuk tujuan apa, data apa saja, berapa lama berlaku, dan apakah dikirim berkala. Persetujuan tidak boleh "sapu jagat" atau disembunyikan di syarat dan ketentuan.',log:{h:'{ph} → {op}',p:'consent { recipient: "Dompetku", purpose: "asset_mgmt",\n  scope: ["bank.deposit","bank.loan","card.bill"],\n  period: "1y", periodic_transfer: true }'},idn:'UU PDP mensyaratkan persetujuan yang sah, tetapi belum ada formulir persetujuan standar lintas lembaga untuk pemindahan data.'},
   {from:'op',to:['b1','c1'],k:'req',t:'Token per penyedia, lalu panggil API',b:'Berbekal autentikasi dan persetujuan tadi, setiap penyedia menerbitkan token akses ke operator. Operator kemudian memanggil <strong>API standar</strong> yang bentuknya sama di semua bank dan penerbit kartu.',log:{h:'{op} → {b1}, {c1}',p:'GET /v1/bank/accounts\nAuthorization: Bearer eyJ…  x-api-tran-id: 20261124-0001\n\nGET /v1/card/bills?month=2026-11'},idn:'Di Indonesia tiap bank punya API sendiri-sendiri, sehingga aplikasi harus membuat integrasi khusus untuk setiap bank. Standar SNAP BI baru mencakup layanan pembayaran.'},
@@ -190,12 +206,12 @@ const SC=[
   {from:'b1',to:'kcis',k:'event',t:'Riwayat transfer dilaporkan',b:'Riwayat transfer dicatat di {kcis}, sehingga warga bisa melihat di satu tempat lembaga mana mengirim data apa ke siapa.',log:{h:'{b1} → {kcis}',p:'transfer_log { provider: "Bank A", recipient: "Dompetku",\n  scope: "bank.deposit", at: "2026-11-24T09:42" }'}},
   {from:'op',to:'ph',k:'resp',scr:'dash',t:'Dasbor terpadu',b:'Warga melihat semua asetnya di satu aplikasi dan bisa mendapat saran, misalnya pindah pinjaman ke bunga lebih rendah. Inilah tujuan ekonominya: persaingan dan layanan baru berbasis data milik warga sendiri.',log:{h:'{op} → {ph}',p:'render dashboard (3 sumber data)'}},
  ]},
- {name:'2 · Scraping vs API',start:'scrape',steps:[
+ {name:'3 · Scraping vs API',start:'scrape',steps:[
   {from:'ph',to:'op',k:'req',scr:'scrape',t:'Cara lama: menyerahkan kata sandi',b:'Sebelum 2022, banyak aplikasi meminta ID dan kata sandi internet banking pengguna, lalu login <em>sebagai pengguna</em> dan membaca isi layar (screen scraping). Aplikasi memegang kunci penuh akun, termasuk kemampuan bertransaksi.',log:{h:'{ph} → {op}',p:'{ "bank_id": "kim••••", "password": "••••••••" }   ← disimpan aplikasi'}},
   {from:'op',to:'b1',k:'bad',t:'Login meniru pengguna',b:'Bank tidak bisa membedakan pengguna asli dari aplikasi. Bila aplikasi diretas, kata sandi semua penggunanya ikut bocor. Akses juga mudah rusak setiap kali tampilan situs bank berubah.',log:{h:'{op} → {b1}',p:'POST /ib/login (headless browser)\nGET /ib/account-summary.html → parse HTML'}},
   {from:'b1',to:'op',k:'bad',t:'Dilarang sejak 2022',b:'Saat MyData berbasis API berlaku penuh pada Januari 2022, scraping <strong>dilarang total</strong> bagi operator MyData. Penggantinya adalah token dengan cakupan terbatas yang bisa dicabut, tanpa operator pernah melihat kata sandi.',log:{h:'{b1} → {op}',p:'403  scraping tidak diizinkan untuk operator MyData\n→ gunakan API standar + token'},idn:'Indonesia belum punya larangan atau standar serupa. Kalau ingin membangun MyData keuangan, langkah awalnya adalah API standar wajib dan larangan meminta kata sandi pengguna.'},
  ]},
- {name:'3 · MyData publik',start:'loan',steps:[
+ {name:'4 · MyData publik',start:'loan',steps:[
   {from:'ph',to:'bank',k:'req',scr:'loan',t:'Bank membutuhkan dokumen',b:'Warga mengajukan kredit ke {bank}. Biasanya ia harus mengurus bukti penghasilan dan riwayat iuran asuransi ke dua kantor berbeda, lalu menyerahkannya dalam bentuk kertas.',log:{h:'{ph} → {bank}',p:'Pengajuan kredit · dokumen: bukti penghasilan, riwayat iuran'}},
   {from:'ph',to:'gov',k:'req',scr:'pubconsent',t:'Warga memerintahkan pengiriman',b:'Warga menggunakan <strong>hak meminta penyediaan</strong> informasi administratif: "kirim data saya ke {bank}". Undang-undang memperbolehkan penerimanya pihak swasta.',log:{h:'{ph} → {gov}',p:'request { recipient: "Bank C",\n  items: ["income_cert","health_ins_payment"], consent: true }'},idn:'Di Indonesia, warga tidak bisa memerintahkan instansi mengirim datanya ke bank. Yang ada justru sebaliknya: bank mengakses verifikasi data Dukcapil berdasarkan perjanjian kerja sama, dan warga tidak tahu kapan itu terjadi.'},
   {from:'gov',to:['nts','nhis'],k:'req',t:'Data diambil dari instansi sumber',b:'Sistem MyData publik meminta data ke {nts} dan {nhis}.',log:{h:'{gov} → {nts}, {nhis}',p:'GET income_cert?subject=…\nGET payment_history?subject=…&months=12'}},
@@ -203,12 +219,12 @@ const SC=[
   {from:'gov',to:'bank',k:'resp',t:'Masuk ke dompet dokumen bank',b:'Data dikirim ke <strong>dompet dokumen elektronik</strong> milik bank. Riwayat pengiriman tercatat dan bisa dilihat warga.',log:{h:'{gov} → {bank}',p:'deliver → e-doc wallet Bank C  (2 item)\nlog: 2026-11-24 10:15 · penerima Bank C'}},
   {from:'bank',to:'ph',k:'resp',scr:'loandone',t:'Selesai tanpa kertas',b:'Pengajuan diproses tanpa fotokopi. Model ini kini juga tersedia untuk badan usaha.',log:{h:'{bank} → {ph}',p:'status: dokumen lengkap'}},
  ]},
- {name:'4 · Kesehatan (UU PIPA)',start:'health',steps:[
+ {name:'5 · Kesehatan (UU PIPA)',start:'health',steps:[
   {from:'ph',to:'hos',k:'req',scr:'health',t:'Hak portabilitas di sektor kesehatan',b:'Berdasarkan amandemen UU PIPA 2023, warga meminta {hos} mengirim rekam medisnya ke aplikasi kesehatan pilihannya. Sektor kesehatan termasuk yang pertama diterapkan.',log:{h:'{ph} → {hos}',p:'transfer_request { recipient: "Aplikasi kesehatan",\n  items: ["diagnosis","lab","prescription"] }'},idn:'Rekam medis di Indonesia mulai terintegrasi ke platform SATUSEHAT Kemenkes, tetapi belum ada jalur resmi bagi pasien untuk memerintahkan pengirimannya ke aplikasi pihak ketiga pilihannya.'},
   {from:'hos',to:'pipc',k:'resp',t:'Lewat lembaga perantara spesialis',b:'Tidak semua rumah sakit bisa membangun API sendiri. Karena itu ada <strong>lembaga spesialis</strong> yang menjadi perantara: menstandarkan format, mengamankan pengiriman, dan mencatat riwayatnya.',log:{h:'{hos} → {pipc}',p:'payload (format standar sektor kesehatan, terenkripsi)\ntransfer_log tercatat'}},
   {from:'pipc',to:'happ',k:'resp',scr:'healthdone',t:'Diterima aplikasi',b:'Aplikasi menerima data dan memberi layanan berdasarkan data tersebut. Penerima tetap terikat tujuan yang disetujui warga.',log:{h:'{pipc} → {happ}',p:'200 delivered'}},
  ]},
- {name:'5 · Lihat & cabut persetujuan',start:'hist',steps:[
+ {name:'6 · Lihat & cabut persetujuan',start:'hist',steps:[
   {from:'ph',to:'kcis',k:'req',scr:'hist',t:'Satu tempat untuk semua persetujuan',b:'Warga membuka portal di {kcis} dan melihat semua persetujuan aktif serta riwayat transfer, tanpa perlu membuka aplikasi tiap operator.',log:{h:'{ph} → {kcis}',p:'GET /consents?ci=Xy7Q…\n→ 2 aktif, 62 transfer bulan ini'}},
   {from:'kcis',to:['op','c1'],k:'bad',off:'c1',t:'Mencabut persetujuan',b:'Warga mencabut persetujuan untuk Kartu B. Pencabutan diteruskan ke operator dan penyedia. Token dibatalkan, pengiriman berkala berhenti, dan operator wajib menghapus data yang sudah diterima.',log:{h:'{kcis} → {op}, {c1}',p:'consent_revoked { provider: "Kartu B", recipient: "Dompetku" }\n→ token revoke, delete received data'},idn:'Belum ada satu tempat bagi warga Indonesia untuk melihat dan mencabut semua izin akses datanya lintas lembaga.'},
   {from:'c1',to:'ph',k:'resp',scr:'revoked',t:'Kendali tetap di tangan warga',b:'Persetujuan bukan cek kosong: bisa dilihat, dibatasi waktunya, dan dicabut kapan saja.',log:{h:'{c1} → {ph}',p:'status: dicabut'}},
