@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulasi Conecta gov.br</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* VOICE: praktis dan berorientasi hasil, seperti sistem desain gov.br.
+   IDEA: gerbang API pusat dengan meteran penghematan: setiap transaksi otomatis menghemat uang dan waktu, dan angkanya bertambah di depan mata.
+   PICTURE: instansi pengguna di kiri, kolom Conecta (katalog, adesão, gateway) di tengah, pengelola data di kanan, warga/swasta di atas, meteran penghematan dan matriks izin akses.
+   COLOUR and TYPE: biru gov.br #1351b4, navy #071d41, kuning #ffcd07 untuk paket, hijau #168821 untuk sukses; Raleway untuk judul, Source Sans 3 untuk isi, Plex Mono untuk log.
+   LAYOUT: header navy dengan kontrol, meteran di atas peta, peta 3 kolom, lalu panel langkah, matriks izin, dan log; menumpuk di bawah 760px. */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0a1222);--ink:light-dark(#0c1a33,#e7ecf5);--mute:light-dark(#53607a,#a3afc4);
+--blue:light-dark(#1351b4,#8fb4f2);--navy:light-dark(#071d41,#d9e4f7);--onNavy:light-dark(#fff,#0a1222);
+--yel:#ffcd07;--green:light-dark(#168821,#6fd37a);--bad:light-dark(#b42318,#ff7a6e);--warn:light-dark(#9a5b00,#f3b35a);
+--soft:light-dark(#eef3fb,#121c30);--line:light-dark(#cfd9ea,#2a3854);--card:light-dark(#fff,#101a2d)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Source Sans 3",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(22px,3.5vw,48px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+header.band{background:light-dark(#071d41,#0f2a5c);color:#fff;padding-bottom:22px}
+h1{font:800 clamp(28px,4vw,42px)/1.08 Raleway,sans-serif;margin:0 0 8px;text-wrap:balance}
+header p{margin:0;max-width:72ch;opacity:.9}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:18px}
+button{font:inherit;cursor:pointer}
+.sc{min-height:44px;padding:8px 16px;border-radius:999px;border:1.5px solid #ffffff77;background:transparent;color:#fff;font-weight:600}
+.sc[aria-pressed=true]{background:var(--yel);color:#071d41;border-color:var(--yel)}
+.mode{margin-left:auto;display:flex;border-radius:999px;overflow:hidden;border:1.5px solid #ffffff77}
+.mode button{min-height:44px;padding:8px 16px;border:0;background:transparent;color:#fff;font-weight:600}
+.mode button[aria-pressed=true]{background:#fff;color:#071d41}
+button:focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+.meter{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.m{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 14px}
+.m b{display:block;font:800 clamp(22px,3vw,30px)/1.1 Raleway,sans-serif;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap}
+.m span{font-size:13px;color:var(--mute)}
+.m.bump b{color:var(--green)}
+.stage{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr);grid-template-areas:"top top top" "con hub pro";gap:16px 22px;background:var(--soft);border-radius:16px;padding:18px}
+.top{grid-area:top;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.con{grid-area:con}.pro{grid-area:pro}.hub{grid-area:hub;background:light-dark(#dbe7fb,#13284d);border-radius:14px;padding:12px}
+.col{display:flex;flex-direction:column;gap:10px}
+h2{font:700 13px/1.3 Raleway,sans-serif;color:var(--mute);margin:0}
+.hub h2{color:var(--blue)}
+.node{position:relative;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;display:block;width:100%;min-height:44px;transition:border-color .25s,box-shadow .25s,transform .25s}
+.node b{display:block;font:700 16px/1.25 Raleway,sans-serif}
+.node .nm{display:block;font-size:14px;line-height:1.35}
+.node small{display:block;font-size:13px;color:var(--mute);margin-top:2px}
+.hub .node{border-color:light-dark(#9fbbe8,#2d4a7f)}
+.node.on{border-color:var(--blue);box-shadow:0 0 0 3px light-dark(#1351b433,#8fb4f244);transform:translateY(-1px)}
+.node.sel{outline:2px dashed var(--blue);outline-offset:2px}
+.tag{display:inline-block;font-size:13px;font-weight:600;border-radius:999px;padding:0 8px;margin-top:6px}
+.t-ok{background:light-dark(#e3f4e5,#16391b);color:var(--green)}
+.t-part{background:light-dark(#fdf0dc,#3a2a12);color:var(--warn)}
+.t-no{background:light-dark(#fbe4e1,#3d1814);color:var(--bad)}
+.pkt{position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;background:var(--yel);color:#071d41;font:700 13px/30px "Source Sans 3",sans-serif;text-align:center;pointer-events:none;z-index:5;box-shadow:0 2px 8px #0005}
+.pkt.resp{background:var(--blue);color:var(--onNavy)}.pkt.event{background:var(--green);color:#fff}.pkt.bad{background:var(--bad);color:#fff}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;color:var(--mute);margin-top:12px}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:22px;margin-top:22px}
+.panel{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:18px}
+.panel h3{margin:0 0 6px;font:700 20px/1.25 Raleway,sans-serif}
+.stepnav{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+.btn{min-height:44px;padding:8px 18px;border-radius:999px;border:1.5px solid var(--blue);background:var(--blue);color:var(--onNavy);font-weight:600}
+.btn.ghost{background:transparent;color:var(--blue)}
+.btn:disabled{opacity:.45;cursor:default}
+.dots{display:flex;gap:6px;margin-left:auto}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.dots i.done{background:var(--blue)}.dots i.cur{background:var(--yel)}
+.idnote{margin-top:12px;padding:10px 12px;border-left:4px solid var(--warn);background:light-dark(#fdf6ea,#2a2112);border-radius:0 8px 8px 0;font-size:15px}
+.info{margin-top:14px;font-size:15px;color:var(--mute)}.info strong{color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{font-weight:600;color:var(--mute);font-size:13px}
+td.c{text-align:center;font-weight:600;white-space:nowrap}
+.ok{color:var(--green)}.no{color:var(--bad)}.pend{color:var(--warn)}
+.log{list-style:none;margin:0;padding:0;display:grid;gap:10px;max-height:440px;overflow:auto}
+.log li{border-left:4px solid var(--yel);padding:4px 0 4px 10px}
+.log li.resp{border-color:var(--blue)}.log li.event{border-color:var(--green)}.log li.bad{border-color:var(--bad)}
+.log .hd{font-weight:600;font-size:15px}
+.log pre{margin:4px 0 0;font:13px/1.45 "IBM Plex Mono",ui-monospace,monospace;background:var(--soft);padding:8px 10px;border-radius:8px;overflow-x:auto;white-space:pre}
+.empty{color:var(--mute);font-size:15px}
+.note{font-size:13px;color:var(--mute);margin-top:12px}
+@media(max-width:900px){.lower{grid-template-columns:minmax(0,1fr)}.meter{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.stage{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "con" "hub" "pro";padding:12px}.top{grid-template-columns:minmax(0,1fr)}.mode{margin-left:0}}
+@media(prefers-reduced-motion:reduce){.node{transition:none}}
+</style>
+</head>
+<body>
+<header class="band">
+ <div class="wrap">
+  <a href="index.html" style="display:inline-block;margin-bottom:12px;color:inherit;opacity:.85;font-size:15px;text-decoration:none">← Kembali ke beranda</a>
+  <h1>Simulasi Conecta gov.br (Brasil)</h1>
+  <p>Instansi mengambil data warga langsung dari pengelola data lewat satu platform API pusat. Akses setiap API harus disetujui pengelola datanya, setiap panggilan tercatat, dan setiap transaksi dihitung penghematannya. Tombol <strong>Indonesia</strong> memetakan padanannya.</p>
+  <div class="controls" id="controls"></div>
+ </div>
+</header>
+
+<main class="band">
+ <div class="wrap">
+  <div class="meter" aria-live="polite">
+   <div class="m" id="m1"><b id="v1">0</b><span>transaksi otomatis</span></div>
+   <div class="m" id="m2"><b id="v2">R$ 0</b><span>penghematan (≈R$ 8 / transaksi)</span></div>
+   <div class="m" id="m3"><b id="v3">0 mnt</b><span>waktu warga dihemat (10 mnt / transaksi)</span></div>
+   <div class="m" id="m4"><b id="v4">0 mnt</b><span>waktu petugas dihemat (5 mnt / transaksi)</span></div>
+  </div>
+  <div class="stage" id="stage">
+   <div class="top" id="z-top"></div>
+   <div class="col con"><h2>Instansi pengguna</h2><div class="col" id="z-con"></div></div>
+   <div class="col hub"><h2 id="h-hub">Plataforma Conecta</h2><div class="col" id="z-hub"></div></div>
+   <div class="col pro"><h2>Pengelola data (gestores)</h2><div class="col" id="z-pro"></div></div>
+  </div>
+  <div class="legend">
+   <span style="--c:var(--yel)">Permintaan</span><span style="--c:var(--blue)">Data dikirim</span><span style="--c:var(--green)">Disetujui / tercatat</span><span style="--c:var(--bad)">Ditolak</span>
+  </div>
+
+  <div class="lower">
+   <section class="panel" aria-live="polite">
+    <h3 id="st-title"></h3>
+    <div id="st-body"></div>
+    <div id="st-id"></div>
+    <div class="stepnav">
+     <button class="btn ghost" id="b-prev">Kembali</button>
+     <button class="btn" id="b-next">Langkah berikutnya</button>
+     <button class="btn ghost" id="b-auto">Putar otomatis</button>
+     <div class="dots" id="dots"></div>
+    </div>
+    <div class="info" id="info">Klik komponen mana pun di peta untuk melihat keterangannya.</div>
+    <h3 style="margin-top:20px;font-size:17px">Matriks izin akses (adesão)</h3>
+    <table id="matrix"></table>
+   </section>
+   <section class="panel">
+    <h3>Log pesan</h3>
+    <ul class="log" id="log"></ul>
+    <p class="note">Nilai, nomor, dan nama sistem adalah contoh fiktif atau disederhanakan. Angka penghematan per transaksi mengikuti kalkulator interoperabilitas yang pernah dipublikasikan Sekretariat Pemerintahan Digital Brasil. Format API disederhanakan.</p>
+   </section>
+  </div>
+ </div>
+</main>
+
+<script>
+{
+const N=[
+ {id:'cit',z:'top',br:['Warga · conta gov.br','Login tingkat bronze / prata / ouro','CPF 123.456.789-09'],ix:['Warga · IKD / INApas','Identitas digital nasional','NIK 3578••••••••0003'],st:'part'},
+ {id:'priv',z:'top',br:['Bank swasta · Conecta+','Mengambil data pemerintah atas otorisasi warga',''],ix:['Bank swasta','Akses verifikasi Dukcapil via PKS','Tanpa otorisasi per transaksi oleh warga'],st:'part',
+  info:{br:'Conecta+ adalah jalur bagi institusi swasta untuk menerima informasi dari pemerintah dengan otorisasi warga, terpisah dari Conecta yang khusus antarinstansi publik.',ix:'Di Indonesia, bank dan lembaga keuangan mendapat hak akses verifikasi data kependudukan melalui perjanjian kerja sama dengan Dukcapil. Warga tidak memberi otorisasi per transaksi dan tidak melihat riwayatnya.'}},
+ {id:'c1',z:'con',br:['Sistem seleksi CPNU','Ujian ASN nasional terpadu (federal)',''],ix:['SSCASN (BKN)','Pendaftaran CPNS','Validasi NIK ke Dukcapil'],st:'ok'},
+ {id:'c2',z:'con',br:['Detran-SP','Departemen lalu lintas (negara bagian)',''],ix:['Samsat / Polda','Layanan kendaraan daerah',''],st:'part'},
+ {id:'c3',z:'con',br:['Prefeitura de Recife','Pemerintah kota (município)',''],ix:['Pemkot / Pemkab','Layanan daerah',''],st:'part'},
+ {id:'cat',z:'hub',br:['Katalog API','API terdokumentasi, berversi, dipantau','Termasuk register rujukan'],ix:['Katalog layanan SPLP / SKDN','Belum seragam dan lengkap',''],st:'part',
+  info:{br:'Katalog publik tempat instansi menemukan API yang tersedia, lengkap dengan dokumentasi teknis, versi, dan pengelola datanya. Di dalamnya ada "register rujukan" (registros de referência) seperti CPF, CNPJ, dan basis alamat.',ix:'SKDN dan katalog layanan SPLP adalah padanannya, tetapi belum menjadi pintu tunggal yang lengkap untuk menemukan API data pokok beserta prosedur aksesnya.'}},
+ {id:'ade',z:'hub',br:['Modul adesão','Ajukan akses: tujuan + volume tahunan','Disetujui pengelola data'],ix:['Perjanjian kerja sama (PKS)','Bilateral, per instansi',''],st:'part',
+  info:{br:'Instansi pengguna mengajukan akses per API lewat pengelola API (gerenciador), mencantumkan tujuan (untuk LGPD) dan perkiraan volume tahunan. Pengelola data menyetujui, tim Conecta membuka akses, dan status berubah menjadi "Deferida".',ix:'Di Indonesia, akses data umumnya lewat PKS bilateral antara instansi pengguna dan walidata. Prosesnya bisa memakan berbulan-bulan dan tidak terlihat dalam satu sistem yang seragam.'}},
+ {id:'gw',z:'hub',br:['API gateway + log','Kunci akses per aplikasi','Setiap panggilan tercatat'],ix:['SPLP','API gateway pusat',''],st:'ok',
+  info:{br:'Gerbang pusat yang dioperasikan Serpro: memeriksa kunci akses aplikasi, meneruskan permintaan ke sistem pengelola data, membatasi volume, dan mencatat setiap panggilan untuk keperluan audit dan LGPD. Model ini mirip SPLP.',ix:'SPLP memiliki peran yang sama: validasi akses, routing, dan logging terpusat. Brasil bisa menjadi tolok ukur paling dekat untuk SPLP.'}},
+ {id:'rf',z:'pro',br:['Receita Federal','Register CPF & CNPJ · data fiskal','Dioperasikan Serpro'],ix:['Dukcapil · DJP','NIK (register rujukan) · data pajak',''],st:'ok'},
+ {id:'mds',z:'pro',br:['Kementerian Pembangunan Sosial','CadÚnico (register sosial)','Dioperasikan Dataprev'],ix:['DTSEN','Data tunggal sosial-ekonomi','BPS · Kemensos'],st:'part'},
+ {id:'cbe',z:'pro',br:['Cadastro Base de Endereço','Register rujukan alamat (berbasis CEP)',''],ix:['Register alamat nasional','Belum ada',''],st:'no'},
+];
+const nd=id=>N.find(x=>x.id==id);
+let mode='br';
+const nm=id=>(mode=='br'?nd(id).br:nd(id).ix)[0];
+const T={br:{id:'CPF',num:'123.456.789-09',login:'conta gov.br',gw:'Conecta'},ix:{id:'NIK',num:'3578••••••••0003',login:'IKD/INApas',gw:'SPLP'}};
+const fill=s=>s.replace(/\{(\w+)\}/g,(m,k)=>T[mode][k]??(nd(k)?nm(k):m));
+const APIS=[['cpf','CPF'],['cad','CadÚnico'],['fis','Data fiskal']];
+const BASE={c1:{cpf:'ok',cad:'ok',fis:'no'},c2:{cpf:'ok',cad:'no',fis:'no'},c3:{cpf:'ok',cad:'no',fis:'no'}};
+const SC=[
+ {name:'1 · Daftar ujian tanpa dokumen',steps:[
+  {from:'cit',to:'c1',k:'req',t:'Warga mendaftar ujian ASN',b:'Warga login ke sistem seleksi dengan {login} dan meminta pembebasan biaya pendaftaran sebagai warga berpenghasilan rendah. Ia tidak mengunggah fotokopi identitas maupun surat keterangan miskin.',log:{h:'{cit} → {c1}',p:'POST /inscricao  login={login} (nível prata)\n{ "isencao_taxa": true }'}},
+  {from:'c1',to:'rf',k:'req',save:1,t:'Validasi identitas lewat gateway',b:'Sistem seleksi memanggil API register rujukan {id} melalui {gw}. Gateway memeriksa kunci aplikasi, meneruskan permintaan ke {rf}, dan mencatat panggilan tersebut.',log:{h:'{c1} → {gw} → {rf}',p:'GET /consulta-cpf/v2/{num}\nx-chave-app: cpnu-sistema-01\n→ log: órgão=MGI finalidade="seleção pública"'},idn:'Langkah ini sudah ada di Indonesia: SSCASN memvalidasi NIK ke Dukcapil secara otomatis.'},
+  {from:'rf',to:'c1',k:'resp',t:'Identitas tervalidasi',b:'{rf} mengembalikan nama, tanggal lahir, dan status {id}. Tidak ada salah ketik dan tidak ada dokumen palsu.',log:{h:'{rf} → {c1}',p:'200 { "nome":"Maria S. Oliveira", "nascimento":"1998-03-14",\n  "situacao":"REGULAR" }'}},
+  {from:'c1',to:'mds',k:'req',save:1,t:'Cek register sosial',b:'Untuk keputusan pembebasan biaya, sistem bertanya ke CadÚnico apakah warga terdaftar sebagai keluarga berpenghasilan rendah.',log:{h:'{c1} → {gw} → {mds}',p:'GET /cadunico/v1/pessoa/{num}/situacao'},idn:'Padanannya adalah DTSEN. Namun pengecekan status sosial otomatis untuk layanan seperti ini belum menjadi praktik umum. Warga biasanya masih diminta surat keterangan tidak mampu.'},
+  {from:'mds',to:'c1',k:'resp',t:'Status sosial dikonfirmasi',b:'CadÚnico menjawab "terdaftar dan aktif". Hanya informasi yang diperlukan yang dikirim, bukan seluruh profil keluarga.',log:{h:'{mds} → {c1}',p:'200 { "inscrita": true, "renda_per_capita_faixa": "ate_meio_sm" }'}},
+  {from:'c1',to:'cit',k:'event',t:'Pembebasan biaya disetujui',b:'Keputusan keluar dalam hitungan detik. Meteran di atas menunjukkan penghematan dari dua transaksi otomatis ini. Pada skala nasional, angka seperti inilah yang dipakai Brasil untuk membenarkan investasinya.',log:{h:'{c1} → {cit}',p:'Inscrição confirmada · isenção de taxa: DEFERIDA'}},
+ ]},
+ {name:'2 · Mengajukan akses (adesão)',steps:[
+  {from:'c3',to:'cat',k:'req',t:'Pemkot mencari API',b:'{c3} ingin memeriksa status CadÚnico untuk program bantuan kota. Petugas TI menemukan API tersebut di {cat}, lengkap dengan dokumentasi dan nama pengelola datanya.',log:{h:'{c3} → {cat}',p:'GET /catalogo?q=cadunico\n→ API CadÚnico · gestor: MDS · nível: restrito'},idn:'Di Indonesia belum ada satu katalog yang menunjukkan API data pokok apa saja yang tersedia, siapa walidatanya, dan bagaimana prosedur aksesnya.'},
+  {from:'c3',to:'ade',k:'req',t:'Mengajukan adesão',b:'Pemkot mengisi formulir adesão: API yang diminta, aplikasi yang akan memakainya, <strong>tujuan</strong> (wajib untuk LGPD), dan perkiraan volume per tahun.',log:{h:'{c3} → {ade}',p:'solicitação { api: "CadÚnico", app: "Programa Recife Acolhe",\n  finalidade: "verificar elegibilidade a benefício municipal",\n  volumetria_anual: 120000 }  status: EM ANÁLISE'}},
+  {from:'ade',to:'mds',k:'req',t:'Pengelola data menilai',b:'Permintaan diteruskan ke {mds} sebagai pengelola data. Keputusan ada di tangan pemilik data, bukan operator platform. Ia menilai apakah tujuannya sah dan data yang diminta sudah minimum.',log:{h:'{ade} → {mds}',p:'análise do gestor: finalidade compatível, dados mínimos'}},
+  {from:'mds',to:'ade',k:'event',grant:['c3','cad'],t:'Disetujui',b:'Pengelola data menyetujui. Tim Conecta membuka akses dan status menjadi <strong>Deferida</strong>. Lihat matriks izin di bawah: Pemkot kini punya akses CadÚnico.',log:{h:'{mds} → {ade}',p:'status: APROVADA → liberação de acesso'}},
+  {from:'ade',to:'c3',k:'event',t:'Kunci akses diterbitkan',b:'Pemkot menerima kunci untuk aplikasinya. Mulai sekarang setiap panggilan akan lewat gateway dan tercatat.',log:{h:'{ade} → {c3}',p:'status final: DEFERIDA\nchave: recife-acolhe-prod (escopo: CadÚnico)'},idn:'Prosesnya sederhana, tetapi kuncinya ada pada prosedur seragam lewat satu sistem. Di Indonesia, PKS bilateral membuat setiap pengajuan berbeda-beda dan sulit dilacak.'},
+ ]},
+ {name:'3 · Level berbagi data',steps:[
+  {from:'c2',to:'ade',k:'req',t:'Meminta data yang dilindungi',b:'{c2} mengajukan akses ke data fiskal (penghasilan dari SPT) untuk memverifikasi keringanan pajak kendaraan. Data ini dilindungi kerahasiaan pajak.',log:{h:'{c2} → {ade}',p:'solicitação { api: "Dados fiscais", finalidade: "isenção IPVA" }'}},
+  {from:'ade',to:'rf',k:'req',t:'Ditentukan oleh level berbagi',b:'Dekret 10.046 mengenal tiga level: <strong>amplo</strong> (data publik, tanpa batasan), <strong>restrito</strong> (data terlindungi, untuk instansi yang menjalankan kebijakan publik), dan <strong>específico</strong> (data yang dilindungi kerahasiaan, hanya untuk instansi dan tujuan tertentu yang diatur hukum).',log:{h:'{ade} → {rf}',p:'nível de compartilhamento: ESPECÍFICO (sigilo fiscal)\nexige: base legal expressa + documentos de interoperabilidade'},idn:'Indonesia mengenal klasifikasi terbuka/terbatas/tertutup. Materi kuliah menilainya terlalu sederhana. Model Brasil menambahkan prosedur yang berbeda untuk setiap level, termasuk siapa yang memutuskan.'},
+  {from:'rf',to:'c2',k:'bad',t:'Ditolak, tanpa dasar hukum khusus',b:'{rf} menolak karena tidak ada dasar hukum yang secara khusus mengizinkan Detran menerima data fiskal. Akses ke CPF (level restrito) tetap berjalan seperti biasa.',log:{h:'{rf} → {c2}',p:'status: INDEFERIDA\nmotivo: ausência de base legal para dados sob sigilo fiscal'}},
+ ]},
+ {name:'4 · Conecta+ (swasta)',steps:[
+  {from:'priv',to:'cit',k:'req',t:'Bank meminta otorisasi',b:'Warga mengajukan kredit. {priv} meminta izin untuk mengambil data tertentu dari pemerintah, bukan meminta fotokopi.',log:{h:'{priv} → {cit}',p:'pedido de autorização { dados: ["situação CPF","vínculo"],\n  finalidade: "análise de crédito" }'}},
+  {from:'cit',to:'priv',k:'event',t:'Warga memberi otorisasi',b:'Warga menyetujui lewat {login}. Tanpa otorisasi ini, institusi swasta tidak bisa mengakses data pemerintah melalui Conecta+.',log:{h:'{cit} → {priv}',p:'autorização concedida via {login}'},idn:'Di Indonesia, bank tidak memerlukan otorisasi warga per transaksi untuk memverifikasi data Dukcapil, karena dasarnya adalah PKS antara bank dan Dukcapil.'},
+  {from:'priv',to:'rf',k:'req',save:1,t:'Data diambil lewat Conecta+',b:'Permintaan dari swasta lewat jalur Conecta+ yang terpisah dari jalur antarinstansi, dengan bukti otorisasi warga.',log:{h:'{priv} → {gw} → {rf}',p:'GET /conecta-mais/cpf/{num}\nx-autorizacao-cidadao: aut-77f2…'}},
+  {from:'rf',to:'priv',k:'resp',t:'Data diterima',b:'Bank menerima data yang diotorisasi. Kredit diproses tanpa dokumen kertas.',log:{h:'{rf} → {priv}',p:'200 { "situacao":"REGULAR" }'}},
+ ]},
+];
+const ST={ok:['t-ok','Sudah ada'],part:['t-part','Sebagian'],no:['t-no','Belum ada']};
+let sc=0,step=-1,timer=null,total=0;
+const $=id=>document.getElementById(id);
+function renderControls(){
+ $('controls').innerHTML=SC.map((s,i)=>`<button class="sc" data-i="${i}" aria-pressed="${i==sc}">${s.name}</button>`).join('')+
+ `<div class="mode" role="group" aria-label="Tampilan"><button data-m="br" aria-pressed="${mode=='br'}">Brasil</button><button data-m="ix" aria-pressed="${mode=='ix'}">Indonesia</button></div>`;
+}
+function renderNodes(){
+ $('h-hub').textContent=mode=='br'?'Plataforma Conecta':'Padanan: SPLP';
+ for(const z of ['top','con','hub','pro']){
+  $('z-'+z).innerHTML=N.filter(n=>n.z==z).map(n=>{const d=mode=='br'?n.br:n.ix;
+   const tag=mode=='ix'&&n.st?`<span class="tag ${ST[n.st][0]}">${ST[n.st][1]}</span>`:'';
+   return `<button class="node" id="n-${n.id}" data-id="${n.id}"><b>${d[0]}</b><span class="nm">${d[1]||''}</span>${d[2]?`<small>${d[2]}</small>`:''}${tag}</button>`}).join('');
+ }
+}
+function renderMatrix(){
+ const g=JSON.parse(JSON.stringify(BASE));
+ SC[sc].steps.slice(0,step+1).forEach(x=>{if(x.grant)g[x.grant[0]][x.grant[1]]='ok'});
+ if(sc==1&&step>=1&&step<3)g.c3.cad='pend';
+ const sym={ok:['✓ ok','ok'],no:['—','no'],pend:['… diproses','pend']};
+ $('matrix').innerHTML=`<thead><tr><th>Instansi</th>${APIS.map(a=>`<th style="text-align:center">${a[0]=='cpf'?T[mode].id:mode=='ix'&&a[0]=='cad'?'DTSEN':a[1]}</th>`).join('')}</tr></thead><tbody>`+
+  ['c1','c2','c3'].map(c=>`<tr><td>${nm(c)}</td>${APIS.map(a=>{const v=g[c][a[0]];return `<td class="c ${sym[v][1]}">${sym[v][0]}</td>`}).join('')}</tr>`).join('')+'</tbody>';
+}
+const esc=t=>t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
+function renderMeter(bump){
+ $('v1').textContent=total.toLocaleString('id-ID');
+ $('v2').textContent='R$ '+(total*8).toLocaleString('id-ID');
+ $('v3').textContent=(total*10)+' mnt';
+ $('v4').textContent=(total*5)+' mnt';
+ document.querySelectorAll('.m').forEach(m=>m.classList.toggle('bump',!!bump));
+}
+function renderStep(){
+ const s=SC[sc],cur=s.steps[step];
+ document.querySelectorAll('.node.on').forEach(e=>e.classList.remove('on'));
+ if(!cur){$('st-title').textContent=s.name;$('st-body').innerHTML='<p>Tekan <strong>Langkah berikutnya</strong> untuk memulai skenario ini.</p>';$('st-id').innerHTML=''}
+ else{
+  $('st-title').textContent=`Langkah ${step+1}: ${fill(cur.t)}`;
+  $('st-body').innerHTML=`<p>${fill(cur.b)}</p>`;
+  $('st-id').innerHTML=mode=='ix'&&cur.idn?`<div class="idnote"><strong>Di Indonesia:</strong> ${cur.idn}</div>`:'';
+  route(cur.from,cur.to).forEach(id=>$('n-'+id)?.classList.add('on'));
+ }
+ $('dots').innerHTML=s.steps.map((_,i)=>`<i class="${i<step?'done':i==step?'cur':''}"></i>`).join('');
+ $('b-prev').disabled=step<0;
+ $('b-next').textContent=step>=s.steps.length-1?'Ulangi skenario':'Langkah berikutnya';
+ $('log').innerHTML=step<0?'<li class="empty" style="border:0">Belum ada pesan.</li>':s.steps.slice(0,step+1).map(x=>`<li class="${x.k}"><div class="hd">${fill(x.log.h)}</div><pre>${esc(fill(x.log.p))}</pre></li>`).reverse().join('');
+ renderMatrix();
+}
+function route(a,b){
+ const za=nd(a).z,zb=nd(b).z,ext=['con','top'];
+ if((ext.includes(za)&&zb=='pro')||(za=='pro'&&ext.includes(zb)))return [a,'gw',b];
+ return [a,b];
+}
+function center(id){const st=$('stage').getBoundingClientRect(),r=$('n-'+id).getBoundingClientRect();return [r.left-st.left+r.width/2-15,r.top-st.top+r.height/2-15]}
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function fly(cur){
+ const p=document.createElement('div');p.className='pkt '+cur.k;
+ p.textContent={req:'→',resp:'←',event:'✓',bad:'✕'}[cur.k];
+ $('stage').appendChild(p);
+ const pts=route(cur.from,cur.to).map(center);
+ const an=p.animate(pts.map(([x,y])=>({transform:`translate(${x}px,${y}px)`})),{duration:reduce?1:560*pts.length,easing:'ease-in-out',fill:'forwards'});
+ an.onfinish=()=>setTimeout(()=>p.remove(),reduce?0:350);
+}
+function go(d){
+ const s=SC[sc];
+ if(d>0&&step>=s.steps.length-1){step=-1;renderStep();renderMeter(false);return}
+ step=Math.max(-1,step+d);
+ const cur=s.steps[step];
+ if(d>0&&cur&&cur.save){total++;renderMeter(true)}else renderMeter(false);
+ renderStep();
+ if(d>0&&step>=0)fly(cur);
+}
+function stopAuto(){clearInterval(timer);timer=null;$('b-auto').textContent='Putar otomatis'}
+$('b-next').onclick=()=>{stopAuto();go(1)};
+$('b-prev').onclick=()=>{stopAuto();go(-1)};
+$('b-auto').onclick=()=>{if(timer){stopAuto();return}
+ if(step>=SC[sc].steps.length-1)step=-1;
+ $('b-auto').textContent='Jeda';go(1);
+ timer=setInterval(()=>{if(step>=SC[sc].steps.length-1){stopAuto();return}go(1)},3400)};
+$('controls').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.i){stopAuto();sc=+b.dataset.i;step=-1}
+ if(b.dataset.m)mode=b.dataset.m;
+ renderControls();renderNodes();renderStep()};
+$('stage').onclick=e=>{const b=e.target.closest('.node');if(!b)return;
+ const n=nd(b.dataset.id),d=mode=='br'?n.br:n.ix;
+ document.querySelectorAll('.node.sel').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');
+ const txt=n.info?n.info[mode]:n.z=='pro'?(mode=='br'?'Pengelola data yang memutuskan siapa boleh mengakses API-nya. Datanya tetap di sistem sendiri (banyak dioperasikan BUMN TI pemerintah, Serpro atau Dataprev), dan Conecta hanya menjadi gerbangnya.':`Padanan: ${d[0]}. ${d[1]}. Status: ${ST[n.st][1].toLowerCase()}.`):n.z=='con'?(mode=='br'?'Instansi yang memakai data. Bisa federal, negara bagian, atau kota. Pemerintah federal menanggung biaya agar daerah mau bergabung.':`Padanan: ${d[0]}. ${d[2]||''}`):(mode=='br'?'Akun digital tunggal warga untuk layanan pemerintah, dengan tingkat keamanan bronze, prata, dan ouro.':'IKD/INApas bisa berperan serupa sebagai identitas digital tunggal.');
+ $('info').innerHTML=`<strong>${d[0]}</strong>: ${txt}`};
+addEventListener('resize',()=>document.querySelectorAll('.pkt').forEach(p=>p.remove()));
+renderControls();renderNodes();renderStep();renderMeter(false);
+}
+</script>
+</body>
+</html>

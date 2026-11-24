@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulasi MyData Korea</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* VOICE: ramah tetapi teliti, seperti aplikasi layanan publik Korea.
+   IDEA: data mengikuti perintah warga. Ponsel warga di tengah adalah "remote" yang menyuruh data pindah dari pemegang ke penerima.
+   PICTURE: ponsel hidup di tengah (layar berubah per langkah: persetujuan, dasbor, dompet dokumen, riwayat), pemegang data di kiri, penerima di kanan, infrastruktur pendukung di atas; paket bergerak.
+   COLOUR and TYPE: putih, biru Korea #0047a0 dominan, merah #cd2e3a aksen paket; Noto Sans KR (memuat istilah Korea) + JetBrains Mono untuk log.
+   LAYOUT: judul + kontrol, peta 3 kolom dengan ponsel di tengah, lalu panel langkah dan log; menumpuk di bawah 760px. */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0d1118);--ink:light-dark(#141821,#e8ebf1);--mute:light-dark(#566070,#a2abbb);
+--blue:light-dark(#0047a0,#7fb0f0);--red:light-dark(#cd2e3a,#ff6b75);--soft:light-dark(#f1f4f9,#151b25);--line:light-dark(#d3dae5,#2c3646);
+--card:light-dark(#fff,#131923);--good:light-dark(#1f7a4d,#6fd3a0);--warn:light-dark(#9a5b00,#f3b35a);--bad:light-dark(#b42318,#ff7a6e);
+--phone:light-dark(#141821,#05070b);--screen:light-dark(#ffffff,#161d29)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans KR",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(22px,3.5vw,48px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+header.band{background:var(--blue);color:light-dark(#fff,#0d1118);padding-bottom:22px}
+h1{font-size:clamp(28px,4vw,42px);line-height:1.1;margin:0 0 8px;text-wrap:balance;font-weight:700}
+header p{margin:0;max-width:72ch;opacity:.92}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:18px}
+button{font:inherit;cursor:pointer}
+.sc{min-height:44px;padding:8px 14px;border-radius:999px;border:1.5px solid light-dark(#ffffff88,#0d111888);background:transparent;color:inherit;font-weight:500}
+.sc[aria-pressed=true]{background:light-dark(#fff,#0d1118);color:var(--blue);font-weight:700}
+.mode{margin-left:auto;display:flex;border-radius:999px;overflow:hidden;border:1.5px solid light-dark(#ffffff88,#0d111888)}
+.mode button{min-height:44px;padding:8px 16px;border:0;background:transparent;color:inherit;font-weight:700}
+.mode button[aria-pressed=true]{background:var(--red);color:#fff}
+button:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.stage{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,300px) minmax(0,1fr);grid-template-areas:"hub hub hub" "prov ph rec";gap:16px 20px;background:var(--soft);border-radius:16px;padding:18px}
+.hub{grid-area:hub;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.hub h2{grid-column:1/-1}
+.prov{grid-area:prov}.rec{grid-area:rec}.phw{grid-area:ph;display:flex;justify-content:center;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px}
+h2{font-size:13px;font-weight:700;color:var(--mute);margin:0}
+.node{position:relative;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;display:block;width:100%;min-height:44px;transition:border-color .25s,box-shadow .25s,transform .25s}
+.node b{display:block;font-size:16px;line-height:1.25}
+.node .nm{display:block;font-size:14px;line-height:1.35}
+.node small{display:block;font-size:13px;color:var(--mute);margin-top:2px}
+.hub .node{border-style:dashed}
+.node.on{border-color:var(--red);border-style:solid;box-shadow:0 0 0 3px light-dark(#cd2e3a2e,#ff6b7540);transform:translateY(-1px)}
+.node.sel{outline:2px dashed var(--blue);outline-offset:2px}
+.node.off{opacity:.45}
+.tag{display:inline-block;font-size:13px;font-weight:500;border-radius:999px;padding:0 8px;margin-top:6px}
+.t-ok{background:light-dark(#e2f3ea,#163a28);color:var(--good)}
+.t-part{background:light-dark(#fdf0dc,#3a2a12);color:var(--warn)}
+.t-no{background:light-dark(#fbe4e1,#3d1814);color:var(--bad)}
+.phone{position:relative;width:100%;max-width:280px;background:var(--phone);border-radius:34px;padding:12px;box-shadow:0 14px 30px #0003}
+.phone::before{content:"";display:block;width:70px;height:6px;border-radius:3px;background:#ffffff33;margin:4px auto 10px}
+.screen{background:var(--screen);border-radius:24px;min-height:430px;padding:16px 14px;color:var(--ink);font-size:14px;line-height:1.45;transition:outline-color .25s;outline:3px solid transparent}
+.phone.on .screen{outline-color:var(--red)}
+.screen .app{font-size:13px;color:var(--mute);display:flex;justify-content:space-between}
+.screen h4{margin:6px 0 10px;font-size:19px;line-height:1.25}
+.row{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--line)}
+.row span:last-child{font-weight:700;white-space:nowrap;text-align:right}
+.chip{display:inline-block;font-size:13px;border-radius:999px;padding:2px 10px;margin:3px 4px 0 0;background:light-dark(#e6eefa,#1b2a44);color:var(--blue)}
+.chip.x{background:light-dark(#fbe4e1,#3d1814);color:var(--bad)}
+.cta{margin-top:14px;background:var(--blue);color:light-dark(#fff,#0d1118);border-radius:10px;text-align:center;padding:10px;font-weight:700}
+.cta.red{background:var(--red);color:#fff}
+.small{font-size:13px;color:var(--mute)}
+.pkt{position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;background:var(--red);color:#fff;font:700 13px/30px "Noto Sans KR",sans-serif;text-align:center;pointer-events:none;z-index:5;box-shadow:0 2px 8px #0005}
+.pkt.resp{background:var(--blue);color:light-dark(#fff,#0d1118)}.pkt.event{background:var(--good)}.pkt.bad{background:var(--bad)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;color:var(--mute);margin-top:12px}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:22px;margin-top:22px}
+.panel{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:18px}
+.panel h3{margin:0 0 6px;font-size:20px;line-height:1.25}
+.stepnav{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+.btn{min-height:44px;padding:8px 18px;border-radius:999px;border:1.5px solid var(--blue);background:var(--blue);color:light-dark(#fff,#0d1118);font-weight:700}
+.btn.ghost{background:transparent;color:var(--blue)}
+.btn:disabled{opacity:.45;cursor:default}
+.dots{display:flex;gap:6px;margin-left:auto}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.dots i.done{background:var(--blue)}.dots i.cur{background:var(--red)}
+.idnote{margin-top:12px;padding:10px 12px;border-left:4px solid var(--warn);background:light-dark(#fdf6ea,#2a2112);border-radius:0 8px 8px 0;font-size:15px}
+.info{margin-top:14px;font-size:15px;color:var(--mute)}.info strong{color:var(--ink)}
+.log{list-style:none;margin:0;padding:0;display:grid;gap:10px;max-height:480px;overflow:auto}
+.log li{border-left:4px solid var(--red);padding:4px 0 4px 10px}
+.log li.resp{border-color:var(--blue)}.log li.event{border-color:var(--good)}.log li.bad{border-color:var(--bad)}
+.log .hd{font-weight:700;font-size:15px}
+.log pre{margin:4px 0 0;font:13px/1.45 "JetBrains Mono",ui-monospace,monospace;background:var(--soft);padding:8px 10px;border-radius:8px;overflow-x:auto;white-space:pre}
+.empty{color:var(--mute);font-size:15px}
+.note{font-size:13px;color:var(--mute);margin-top:12px}
+@media(max-width:900px){.lower{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:760px){
+ .stage{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"hub hub" "ph ph" "prov rec";padding:12px}
+ .hub{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .screen{min-height:340px}
+ .mode{margin-left:0}
+}
+@media(prefers-reduced-motion:reduce){.node,.screen{transition:none}}
+</style>
+</head>
+<body>
+<header class="band">
+ <div class="wrap">
+  <a href="index.html" style="display:inline-block;margin-bottom:12px;color:inherit;opacity:.85;font-size:15px;text-decoration:none">← Kembali ke beranda</a>
+  <h1>Simulasi MyData Korea Selatan (마이데이터)</h1>
+  <p>Arah alirannya terbalik dari model sebelumnya: <strong>warga</strong> yang memerintahkan agar datanya dikirim dari pemegang data (bank, kantor pajak, rumah sakit) ke pihak yang ia pilih, melalui API standar, dengan persetujuan yang tercatat dan bisa dicabut. Tombol <strong>Indonesia</strong> memetakan padanannya.</p>
+  <div class="controls" id="controls"></div>
+ </div>
+</header>
+
+<main class="band">
+ <div class="wrap">
+  <div class="stage" id="stage">
+   <div class="hub" id="z-hub"><h2>Infrastruktur pendukung</h2></div>
+   <div class="col prov"><h2>Pemegang data (정보제공자)</h2><div class="col" id="z-prov"></div></div>
+   <div class="phw"><div class="phone node" id="n-ph" data-id="ph" role="button" tabindex="0" aria-label="Ponsel warga"><div class="screen" id="screen"></div></div></div>
+   <div class="col rec"><h2>Penerima yang dipilih warga (수신자)</h2><div class="col" id="z-rec"></div></div>
+  </div>
+  <div class="legend">
+   <span style="--c:var(--red)">Permintaan / perintah warga</span><span style="--c:var(--blue)">Data dikirim</span><span style="--c:var(--good)">Riwayat / event</span><span style="--c:var(--bad)">Ditolak / dicabut</span>
+  </div>
+
+  <div class="lower">
+   <section class="panel" aria-live="polite">
+    <h3 id="st-title"></h3>
+    <div id="st-body"></div>
+    <div id="st-id"></div>
+    <div class="stepnav">
+     <button class="btn ghost" id="b-prev">Kembali</button>
+     <button class="btn" id="b-next">Langkah berikutnya</button>
+     <button class="btn ghost" id="b-auto">Putar otomatis</button>
+     <div class="dots" id="dots"></div>
+    </div>
+    <div class="info" id="info">Klik komponen mana pun di peta untuk melihat keterangannya.</div>
+   </section>
+   <section class="panel">
+    <h3>Log pesan</h3>
+    <ul class="log" id="log"></ul>
+    <p class="note">Nama lembaga dan nilai di simulasi ini adalah contoh fiktif atau disederhanakan. Format API meniru gaya API standar MyData keuangan Korea (OAuth 2.0 + REST), bukan spesifikasi persisnya.</p>
+   </section>
+  </div>
+ </div>
+</main>
+
+<script>
+{
+const N=[
+ {id:'auth',z:'hub',kr:['Autentikasi terpadu','통합인증 · sekali login untuk semua penyedia','Sertifikat / ID seluler'],ix:['IKD / INApas','Identitas digital nasional','Belum terhubung ke skema MyData'],st:'part',
+  info:{kr:'Warga cukup sekali melakukan autentikasi (misalnya sertifikat digital atau ID seluler), lalu semua penyedia yang dipilih menerbitkan token akses. Tanpa ini, warga harus login satu per satu ke puluhan bank.',ix:'IKD/INApas bisa menjadi fondasinya, tetapi belum dipakai sebagai autentikasi terpadu untuk memerintahkan pengiriman data antarlembaga.'}},
+ {id:'kcis',z:'hub',kr:['Pusat dukungan MyData keuangan','Registri operator, riwayat transfer, portal persetujuan','Korea Credit Information Services'],ix:['Pusat MyData keuangan','Belum ada','SNAP BI baru untuk pembayaran'],st:'no',
+  info:{kr:'Mengelola daftar operator berizin dan penyedia data, menampung riwayat transfer yang dilaporkan, dan menyediakan portal tempat warga melihat serta mencabut persetujuan di satu tempat.',ix:'Belum ada padanannya. Bank Indonesia punya SNAP (standar open API pembayaran), tetapi belum ada skema hak warga memindahkan data keuangannya ke penyedia pilihannya beserta pusat riwayatnya.'}},
+ {id:'gov',z:'hub',kr:['MyData publik','공공 마이데이터 · Kementerian Dalam Negeri & Keselamatan','UU E-Government Pasal 43-2'],ix:['Akses data Dukcapil','Lembaga diberi hak akses','Bukan atas perintah warga'],st:'part',
+  info:{kr:'Warga meminta instansi pemerintah mengirim informasi administratif tentang dirinya (misalnya data penghasilan atau iuran asuransi) dalam bentuk data ke dirinya sendiri atau ke pihak ketiga, termasuk swasta, tanpa dokumen kertas.',ix:'Di Indonesia, bank dan lembaga lain mendapat hak akses verifikasi data kependudukan lewat perjanjian kerja sama dengan Dukcapil. Arah inisiatifnya dari lembaga, bukan warga, dan warga tidak melihat riwayat aksesnya.'}},
+ {id:'pipc',z:'hub',kr:['Platform portabilitas umum','PIPC · lembaga perantara spesialis','UU PIPA, amandemen 2023'],ix:['Hak portabilitas (UU PDP)','Ada di undang-undang','Belum ada infrastruktur'],st:'part',
+  info:{kr:'Hak portabilitas data di UU Perlindungan Data Pribadi (PIPA) diperluas bertahap per sektor: kesehatan dan telekomunikasi lebih dulu, lalu pendidikan dan ketenagakerjaan. Lembaga perantara spesialis membantu pengiriman dari pemegang data yang tidak punya API sendiri.',ix:'UU PDP (UU 27/2022) sudah memuat hak subjek data untuk mendapatkan dan memindahkan datanya ke pengendali lain. Yang belum ada: standar teknis per sektor, lembaga perantara, dan kewajiban penyedia menyediakan API.'}},
+ {id:'b1',z:'prov',kr:['Bank A','Rekening & pinjaman','API standar MyData'],ix:['Bank A','Rekening & pinjaman','API per bank, belum seragam'],st:'part'},
+ {id:'c1',z:'prov',kr:['Kartu kredit B','Transaksi & tagihan','API standar MyData'],ix:['Penerbit kartu B','Transaksi & tagihan','Belum wajib membuka API'],st:'no'},
+ {id:'nts',z:'prov',kr:['Badan Pajak Nasional','국세청 · bukti penghasilan','Instansi pemerintah'],ix:['DJP','Bukti potong / SPT','Belum bisa dikirim atas perintah warga'],st:'no'},
+ {id:'nhis',z:'prov',kr:['Asuransi Kesehatan Nasional','건강보험공단 · riwayat iuran','Instansi pemerintah'],ix:['BPJS Kesehatan','Status & iuran kepesertaan','Belum bisa dikirim atas perintah warga'],st:'no'},
+ {id:'hos',z:'prov',kr:['Rumah sakit umum','Rekam medis','Wajib melayani permintaan transfer'],ix:['Rumah sakit','Rekam medis (SATUSEHAT)','Terintegrasi ke platform pemerintah'],st:'part'},
+ {id:'op',z:'rec',kr:['Aplikasi MyData "Dompetku"','Operator MyData berizin','마이데이터 사업자'],ix:['Aplikasi agregator keuangan','Belum ada izin & standar khusus',''],st:'no'},
+ {id:'bank',z:'rec',kr:['Bank C (pengajuan kredit)','Penerima data publik','Dompet dokumen elektronik'],ix:['Bank C (pengajuan kredit)','Biasanya minta fotokopi dokumen',''],st:'part'},
+ {id:'happ',z:'rec',kr:['Aplikasi kesehatan','Penerima umum','lewat lembaga spesialis'],ix:['Aplikasi kesehatan pihak ketiga','Belum ada jalur resmi',''],st:'no'},
+];
+const nd=id=>id=='ph'?{id:'ph',z:'ph',kr:['Ponsel warga'],ix:['Ponsel warga']}:N.find(x=>x.id==id);
+let mode='kr';
+const nm=id=>(mode=='kr'?nd(id).kr:nd(id).ix)[0];
+const T={kr:{ident:'CI (connecting information)',auth:'Autentikasi terpadu'},ix:{ident:'NIK',auth:'IKD/INApas'}};
+const fill=s=>s.replace(/\{(\w+)\}/g,(m,k)=>T[mode][k]??(N.some(x=>x.id==k)||k=='ph'?nm(k):m));
+const won=v=>'₩'+v.toLocaleString('id-ID');
+const SCR={
+ home:()=>`<div class="app"><span>Dompetku</span><span>09:41</span></div><h4>Hubungkan data Anda</h4><p class="small">Pilih lembaga yang datanya ingin Anda kumpulkan di sini.</p><div class="row"><span>Bank A</span><span>○</span></div><div class="row"><span>Kartu kredit B</span><span>○</span></div><div class="cta">Mulai</div>`,
+ auth:()=>`<div class="app"><span>${fill('{auth}')}</span><span>09:41</span></div><h4>Sekali autentikasi</h4><p class="small">Satu kali verifikasi berlaku untuk semua lembaga yang Anda pilih.</p><div class="row"><span>Bank A</span><span>✓</span></div><div class="row"><span>Kartu kredit B</span><span>✓</span></div><div class="cta">Verifikasi</div>`,
+ consent:()=>`<div class="app"><span>Dompetku</span><span>Formulir standar</span></div><h4>Persetujuan pengiriman data</h4><div class="row"><span>Penerima</span><span>Dompetku</span></div><div class="row"><span>Tujuan</span><span>Kelola aset</span></div><div><span class="chip">Saldo</span><span class="chip">Transaksi</span><span class="chip">Tagihan</span></div><div class="row"><span>Berlaku</span><span>1 tahun</span></div><div class="row"><span>Pengiriman berkala</span><span>Ya</span></div><div class="cta">Setuju & kirim</div>`,
+ dash:()=>`<div class="app"><span>Dompetku</span><span>Diperbarui barusan</span></div><h4>Total aset ${won(18420000)}</h4><div class="row"><span>Bank A · tabungan</span><span>${won(15200000)}</span></div><div class="row"><span>Bank A · pinjaman</span><span>−${won(4000000)}</span></div><div class="row"><span>Kartu B · tagihan bulan ini</span><span>−${won(780000)}</span></div><p class="small">Saran: pinjaman Anda berbunga lebih tinggi daripada rata-rata pasar.</p>`,
+ scrape:()=>`<div class="app"><span>Aplikasi lama</span><span>2020</span></div><h4>Masukkan ID & kata sandi bank</h4><div class="row"><span>ID Bank A</span><span>kim••••</span></div><div class="row"><span>Kata sandi</span><span>••••••••</span></div><p class="small">Aplikasi akan login sebagai Anda dan membaca layar internet banking.</p><div class="cta red">Berisiko</div>`,
+ loan:()=>`<div class="app"><span>Bank C</span><span>Pengajuan kredit</span></div><h4>Dokumen yang dibutuhkan</h4><div class="row"><span>Bukti penghasilan</span><span>Badan Pajak</span></div><div class="row"><span>Riwayat iuran asuransi</span><span>Asuransi Kesehatan</span></div><div class="cta">Kirim lewat MyData publik</div>`,
+ pubconsent:()=>`<div class="app"><span>MyData publik</span><span>공공 마이데이터</span></div><h4>Kirim data administratif saya ke Bank C</h4><div><span class="chip">Bukti penghasilan</span><span class="chip">Riwayat iuran</span></div><div class="row"><span>Penerima</span><span>Bank C</span></div><div class="cta">Setuju</div>`,
+ loandone:()=>`<div class="app"><span>Bank C</span><span>Status</span></div><h4>Dokumen diterima ✓</h4><div class="row"><span>Bukti penghasilan</span><span>✓ data</span></div><div class="row"><span>Riwayat iuran</span><span>✓ data</span></div><p class="small">Tanpa fotokopi dan tanpa datang ke kantor. Riwayat pengiriman bisa Anda lihat di portal MyData publik.</p>`,
+ health:()=>`<div class="app"><span>Rumah sakit</span><span>Hak portabilitas</span></div><h4>Kirim rekam medis saya ke aplikasi kesehatan</h4><div><span class="chip">Diagnosis</span><span class="chip">Hasil lab</span><span class="chip">Resep</span></div><div class="row"><span>Lewat</span><span>Lembaga spesialis</span></div><div class="cta">Minta pengiriman</div>`,
+ healthdone:()=>`<div class="app"><span>Aplikasi kesehatan</span><span>Data baru</span></div><h4>Ringkasan kesehatan Anda</h4><div class="row"><span>Gula darah puasa</span><span>112 mg/dL</span></div><div class="row"><span>Resep aktif</span><span>2 obat</span></div><p class="small">Aplikasi menyarankan jadwal kontrol berikutnya.</p>`,
+ hist:()=>`<div class="app"><span>Portal MyData</span><span>Riwayat</span></div><h4>Persetujuan aktif</h4><div class="row"><span>Bank A → Dompetku</span><span>Aktif</span></div><div class="row"><span>Kartu B → Dompetku</span><span>Aktif</span></div><div class="row"><span>Transfer bulan ini</span><span>62×</span></div><div class="cta red">Cabut persetujuan Kartu B</div>`,
+ revoked:()=>`<div class="app"><span>Portal MyData</span><span>Riwayat</span></div><h4>Persetujuan diperbarui</h4><div class="row"><span>Bank A → Dompetku</span><span>Aktif</span></div><div class="row"><span>Kartu B → Dompetku</span><span><span class="chip x">Dicabut</span></span></div><p class="small">Dompetku wajib menghapus data Kartu B yang sudah diterima.</p>`,
+};
+const SC=[
+ {name:'1 · MyData keuangan',start:'home',steps:[
+  {from:'ph',to:'auth',k:'req',scr:'auth',t:'Sekali autentikasi',b:'Warga membuka aplikasi operator MyData berizin, memilih Bank A dan Kartu B, lalu cukup sekali melakukan {auth}. Warga dikenali lintas lembaga lewat pengenal {ident}, bukan dengan menyerahkan kata sandi bank.',log:{h:'{ph} → {auth}',p:'POST /auth  method=certificate\n→ ci=Xy7Q…(hash pengenal)  ok'}},
+  {from:'ph',to:'op',k:'req',scr:'consent',t:'Persetujuan dengan formulir standar',b:'Persetujuan memakai <strong>format standar</strong> yang sama di semua operator: siapa penerimanya, untuk tujuan apa, data apa saja, berapa lama berlaku, dan apakah dikirim berkala. Persetujuan tidak boleh "sapu jagat" atau disembunyikan di syarat dan ketentuan.',log:{h:'{ph} → {op}',p:'consent { recipient: "Dompetku", purpose: "asset_mgmt",\n  scope: ["bank.deposit","bank.loan","card.bill"],\n  period: "1y", periodic_transfer: true }'},idn:'UU PDP mensyaratkan persetujuan yang sah, tetapi belum ada formulir persetujuan standar lintas lembaga untuk pemindahan data.'},
+  {from:'op',to:['b1','c1'],k:'req',t:'Token per penyedia, lalu panggil API',b:'Berbekal autentikasi dan persetujuan tadi, setiap penyedia menerbitkan token akses ke operator. Operator kemudian memanggil <strong>API standar</strong> yang bentuknya sama di semua bank dan penerbit kartu.',log:{h:'{op} → {b1}, {c1}',p:'GET /v1/bank/accounts\nAuthorization: Bearer eyJ…  x-api-tran-id: 20261124-0001\n\nGET /v1/card/bills?month=2026-11'},idn:'Di Indonesia tiap bank punya API sendiri-sendiri, sehingga aplikasi harus membuat integrasi khusus untuk setiap bank. Standar SNAP BI baru mencakup layanan pembayaran.'},
+  {from:['b1','c1'],to:'op',k:'resp',t:'Data dikirim',b:'Penyedia mengirim hanya data dalam cakupan persetujuan. Karena formatnya standar, operator bisa menggabungkannya tanpa penyesuaian per bank.',log:{h:'{b1}, {c1} → {op}',p:'200 { "accounts":[{"type":"deposit","balance":15200000},\n  {"type":"loan","balance":4000000,"rate":6.1}] }\n200 { "bill_amt": 780000, "due": "2026-12-10" }'}},
+  {from:'b1',to:'kcis',k:'event',t:'Riwayat transfer dilaporkan',b:'Riwayat transfer dicatat di {kcis}, sehingga warga bisa melihat di satu tempat lembaga mana mengirim data apa ke siapa.',log:{h:'{b1} → {kcis}',p:'transfer_log { provider: "Bank A", recipient: "Dompetku",\n  scope: "bank.deposit", at: "2026-11-24T09:42" }'}},
+  {from:'op',to:'ph',k:'resp',scr:'dash',t:'Dasbor terpadu',b:'Warga melihat semua asetnya di satu aplikasi dan bisa mendapat saran, misalnya pindah pinjaman ke bunga lebih rendah. Inilah tujuan ekonominya: persaingan dan layanan baru berbasis data milik warga sendiri.',log:{h:'{op} → {ph}',p:'render dashboard (3 sumber data)'}},
+ ]},
+ {name:'2 · Scraping vs API',start:'scrape',steps:[
+  {from:'ph',to:'op',k:'req',scr:'scrape',t:'Cara lama: menyerahkan kata sandi',b:'Sebelum 2022, banyak aplikasi meminta ID dan kata sandi internet banking pengguna, lalu login <em>sebagai pengguna</em> dan membaca isi layar (screen scraping). Aplikasi memegang kunci penuh akun, termasuk kemampuan bertransaksi.',log:{h:'{ph} → {op}',p:'{ "bank_id": "kim••••", "password": "••••••••" }   ← disimpan aplikasi'}},
+  {from:'op',to:'b1',k:'bad',t:'Login meniru pengguna',b:'Bank tidak bisa membedakan pengguna asli dari aplikasi. Bila aplikasi diretas, kata sandi semua penggunanya ikut bocor. Akses juga mudah rusak setiap kali tampilan situs bank berubah.',log:{h:'{op} → {b1}',p:'POST /ib/login (headless browser)\nGET /ib/account-summary.html → parse HTML'}},
+  {from:'b1',to:'op',k:'bad',t:'Dilarang sejak 2022',b:'Saat MyData berbasis API berlaku penuh pada Januari 2022, scraping <strong>dilarang total</strong> bagi operator MyData. Penggantinya adalah token dengan cakupan terbatas yang bisa dicabut, tanpa operator pernah melihat kata sandi.',log:{h:'{b1} → {op}',p:'403  scraping tidak diizinkan untuk operator MyData\n→ gunakan API standar + token'},idn:'Indonesia belum punya larangan atau standar serupa. Kalau ingin membangun MyData keuangan, langkah awalnya adalah API standar wajib dan larangan meminta kata sandi pengguna.'},
+ ]},
+ {name:'3 · MyData publik',start:'loan',steps:[
+  {from:'ph',to:'bank',k:'req',scr:'loan',t:'Bank membutuhkan dokumen',b:'Warga mengajukan kredit ke {bank}. Biasanya ia harus mengurus bukti penghasilan dan riwayat iuran asuransi ke dua kantor berbeda, lalu menyerahkannya dalam bentuk kertas.',log:{h:'{ph} → {bank}',p:'Pengajuan kredit · dokumen: bukti penghasilan, riwayat iuran'}},
+  {from:'ph',to:'gov',k:'req',scr:'pubconsent',t:'Warga memerintahkan pengiriman',b:'Warga menggunakan <strong>hak meminta penyediaan</strong> informasi administratif: "kirim data saya ke {bank}". Undang-undang memperbolehkan penerimanya pihak swasta.',log:{h:'{ph} → {gov}',p:'request { recipient: "Bank C",\n  items: ["income_cert","health_ins_payment"], consent: true }'},idn:'Di Indonesia, warga tidak bisa memerintahkan instansi mengirim datanya ke bank. Yang ada justru sebaliknya: bank mengakses verifikasi data Dukcapil berdasarkan perjanjian kerja sama, dan warga tidak tahu kapan itu terjadi.'},
+  {from:'gov',to:['nts','nhis'],k:'req',t:'Data diambil dari instansi sumber',b:'Sistem MyData publik meminta data ke {nts} dan {nhis}.',log:{h:'{gov} → {nts}, {nhis}',p:'GET income_cert?subject=…\nGET payment_history?subject=…&months=12'}},
+  {from:['nts','nhis'],to:'gov',k:'resp',t:'Data dikembalikan dalam bentuk data',b:'Yang dikirim adalah data terstruktur, bukan PDF atau hasil pindaian, sehingga bank bisa memprosesnya otomatis.',log:{h:'{nts}, {nhis} → {gov}',p:'{ "income_2025": 52400000 }\n{ "paid_months": 12, "arrears": 0 }'}},
+  {from:'gov',to:'bank',k:'resp',t:'Masuk ke dompet dokumen bank',b:'Data dikirim ke <strong>dompet dokumen elektronik</strong> milik bank. Riwayat pengiriman tercatat dan bisa dilihat warga.',log:{h:'{gov} → {bank}',p:'deliver → e-doc wallet Bank C  (2 item)\nlog: 2026-11-24 10:15 · penerima Bank C'}},
+  {from:'bank',to:'ph',k:'resp',scr:'loandone',t:'Selesai tanpa kertas',b:'Pengajuan diproses tanpa fotokopi. Model ini kini juga tersedia untuk badan usaha.',log:{h:'{bank} → {ph}',p:'status: dokumen lengkap'}},
+ ]},
+ {name:'4 · Kesehatan (UU PIPA)',start:'health',steps:[
+  {from:'ph',to:'hos',k:'req',scr:'health',t:'Hak portabilitas di sektor kesehatan',b:'Berdasarkan amandemen UU PIPA 2023, warga meminta {hos} mengirim rekam medisnya ke aplikasi kesehatan pilihannya. Sektor kesehatan termasuk yang pertama diterapkan.',log:{h:'{ph} → {hos}',p:'transfer_request { recipient: "Aplikasi kesehatan",\n  items: ["diagnosis","lab","prescription"] }'},idn:'Rekam medis di Indonesia mulai terintegrasi ke platform SATUSEHAT Kemenkes, tetapi belum ada jalur resmi bagi pasien untuk memerintahkan pengirimannya ke aplikasi pihak ketiga pilihannya.'},
+  {from:'hos',to:'pipc',k:'resp',t:'Lewat lembaga perantara spesialis',b:'Tidak semua rumah sakit bisa membangun API sendiri. Karena itu ada <strong>lembaga spesialis</strong> yang menjadi perantara: menstandarkan format, mengamankan pengiriman, dan mencatat riwayatnya.',log:{h:'{hos} → {pipc}',p:'payload (format standar sektor kesehatan, terenkripsi)\ntransfer_log tercatat'}},
+  {from:'pipc',to:'happ',k:'resp',scr:'healthdone',t:'Diterima aplikasi',b:'Aplikasi menerima data dan memberi layanan berdasarkan data tersebut. Penerima tetap terikat tujuan yang disetujui warga.',log:{h:'{pipc} → {happ}',p:'200 delivered'}},
+ ]},
+ {name:'5 · Lihat & cabut persetujuan',start:'hist',steps:[
+  {from:'ph',to:'kcis',k:'req',scr:'hist',t:'Satu tempat untuk semua persetujuan',b:'Warga membuka portal di {kcis} dan melihat semua persetujuan aktif serta riwayat transfer, tanpa perlu membuka aplikasi tiap operator.',log:{h:'{ph} → {kcis}',p:'GET /consents?ci=Xy7Q…\n→ 2 aktif, 62 transfer bulan ini'}},
+  {from:'kcis',to:['op','c1'],k:'bad',off:'c1',t:'Mencabut persetujuan',b:'Warga mencabut persetujuan untuk Kartu B. Pencabutan diteruskan ke operator dan penyedia. Token dibatalkan, pengiriman berkala berhenti, dan operator wajib menghapus data yang sudah diterima.',log:{h:'{kcis} → {op}, {c1}',p:'consent_revoked { provider: "Kartu B", recipient: "Dompetku" }\n→ token revoke, delete received data'},idn:'Belum ada satu tempat bagi warga Indonesia untuk melihat dan mencabut semua izin akses datanya lintas lembaga.'},
+  {from:'c1',to:'ph',k:'resp',scr:'revoked',t:'Kendali tetap di tangan warga',b:'Persetujuan bukan cek kosong: bisa dilihat, dibatasi waktunya, dan dicabut kapan saja.',log:{h:'{c1} → {ph}',p:'status: dicabut'}},
+ ]},
+];
+const ST={ok:['t-ok','Sudah ada'],part:['t-part','Sebagian'],no:['t-no','Belum ada']};
+let sc=0,step=-1,timer=null;
+const $=id=>document.getElementById(id);
+function renderControls(){
+ $('controls').innerHTML=SC.map((s,i)=>`<button class="sc" data-i="${i}" aria-pressed="${i==sc}">${s.name}</button>`).join('')+
+ `<div class="mode" role="group" aria-label="Tampilan"><button data-m="kr" aria-pressed="${mode=='kr'}">Korea</button><button data-m="ix" aria-pressed="${mode=='ix'}">Indonesia</button></div>`;
+}
+function renderNodes(){
+ const offs=new Set(SC[sc].steps.slice(0,step+1).filter(x=>x.off).map(x=>x.off));
+ for(const z of ['hub','prov','rec']){
+  const el=$('z-'+z),h=z=='hub'?'<h2>Infrastruktur pendukung</h2>':'';
+  el.innerHTML=h+N.filter(n=>n.z==z).map(n=>{const d=mode=='kr'?n.kr:n.ix;
+   const tag=mode=='ix'&&n.st?`<span class="tag ${ST[n.st][0]}">${ST[n.st][1]}</span>`:'';
+   return `<button class="node${offs.has(n.id)?' off':''}" id="n-${n.id}" data-id="${n.id}"><b>${d[0]}</b><span class="nm">${d[1]||''}</span>${d[2]?`<small>${d[2]}</small>`:''}${tag}</button>`}).join('');
+ }
+}
+function curScreen(){const s=SC[sc];let k=s.start;s.steps.slice(0,step+1).forEach(x=>{if(x.scr)k=x.scr});return SCR[k]()}
+const esc=t=>t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
+const arr=x=>[].concat(x);
+function renderStep(){
+ const s=SC[sc],cur=s.steps[step];
+ document.querySelectorAll('.node.on').forEach(e=>e.classList.remove('on'));
+ $('screen').innerHTML=curScreen();
+ if(!cur){$('st-title').textContent=s.name;$('st-body').innerHTML='<p>Tekan <strong>Langkah berikutnya</strong> untuk memulai skenario ini.</p>';$('st-id').innerHTML=''}
+ else{
+  $('st-title').textContent=`Langkah ${step+1}: ${fill(cur.t)}`;
+  $('st-body').innerHTML=`<p>${fill(cur.b)}</p>`;
+  $('st-id').innerHTML=mode=='ix'&&cur.idn?`<div class="idnote"><strong>Di Indonesia:</strong> ${cur.idn}</div>`:'';
+  [...arr(cur.from),...arr(cur.to)].forEach(id=>$('n-'+id)?.classList.add('on'));
+ }
+ $('dots').innerHTML=s.steps.map((_,i)=>`<i class="${i<step?'done':i==step?'cur':''}"></i>`).join('');
+ $('b-prev').disabled=step<0;
+ $('b-next').textContent=step>=s.steps.length-1?'Ulangi skenario':'Langkah berikutnya';
+ $('log').innerHTML=step<0?'<li class="empty" style="border:0">Belum ada pesan.</li>':s.steps.slice(0,step+1).map(x=>`<li class="${x.k}"><div class="hd">${fill(x.log.h)}</div><pre>${esc(fill(x.log.p))}</pre></li>`).reverse().join('');
+}
+function center(id){const st=$('stage').getBoundingClientRect(),r=$('n-'+id).getBoundingClientRect();return [r.left-st.left+r.width/2-15,r.top-st.top+Math.min(r.height/2,60)-15]}
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function fly(cur){
+ for(const f of arr(cur.from))for(const t of arr(cur.to)){
+  const p=document.createElement('div');p.className='pkt '+cur.k;
+  p.textContent={req:'→',resp:'←',event:'✓',bad:'✕'}[cur.k];
+  $('stage').appendChild(p);
+  const pts=[center(f),center(t)];
+  const an=p.animate(pts.map(([x,y])=>({transform:`translate(${x}px,${y}px)`})),{duration:reduce?1:900,easing:'ease-in-out',fill:'forwards'});
+  an.onfinish=()=>setTimeout(()=>p.remove(),reduce?0:350);
+ }
+}
+function go(d){
+ const s=SC[sc];
+ if(d>0&&step>=s.steps.length-1){step=-1;renderNodes();renderStep();return}
+ step=Math.max(-1,step+d);renderNodes();renderStep();
+ if(d>0&&step>=0)fly(s.steps[step]);
+}
+function stopAuto(){clearInterval(timer);timer=null;$('b-auto').textContent='Putar otomatis'}
+$('b-next').onclick=()=>{stopAuto();go(1)};
+$('b-prev').onclick=()=>{stopAuto();go(-1)};
+$('b-auto').onclick=()=>{if(timer){stopAuto();return}
+ if(step>=SC[sc].steps.length-1)step=-1;
+ $('b-auto').textContent='Jeda';go(1);
+ timer=setInterval(()=>{if(step>=SC[sc].steps.length-1){stopAuto();return}go(1)},3400)};
+$('controls').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.i){stopAuto();sc=+b.dataset.i;step=-1}
+ if(b.dataset.m)mode=b.dataset.m;
+ renderControls();renderNodes();renderStep()};
+$('stage').onclick=e=>{const b=e.target.closest('.node');if(!b)return;
+ document.querySelectorAll('.node.sel').forEach(x=>x.classList.remove('sel'));
+ if(b.id=='n-ph'){$('info').innerHTML='<strong>Ponsel warga</strong>: pusat kendali. Semua pengiriman data dimulai dari perintah warga, dan layarnya menunjukkan apa yang dilihat warga pada setiap langkah.';return}
+ b.classList.add('sel');
+ const n=nd(b.dataset.id),d=mode=='kr'?n.kr:n.ix;
+ const txt=n.info?n.info[mode]:n.z=='prov'?(mode=='kr'?'Pemegang data yang wajib mengirim data atas permintaan warga, lewat API standar atau lembaga perantara.':`Padanan: ${d[0]}. ${d[2]}.`):(mode=='kr'?'Pihak yang dipilih warga untuk menerima datanya. Hanya boleh memakai data sesuai tujuan dalam persetujuan.':`Padanan: ${d[0]}. ${d[1]||''}`);
+ $('info').innerHTML=`<strong>${d[0]}</strong>: ${txt}`};
+addEventListener('resize',()=>document.querySelectorAll('.pkt').forEach(p=>p.remove()));
+renderControls();renderNodes();renderStep();
+}
+</script>
+</body>
+</html>

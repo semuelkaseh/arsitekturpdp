@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulasi Arsitektur Pertukaran Data</title>
+<meta name="description" content="Simulasi interaktif arsitektur pertukaran data pemerintah: MyData Korea Selatan dan Conecta gov.br Brasil.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: rapi dan akademik, selaras dengan template presentasi DTETI.
+   IDEA: sampul laporan tugas yang membuka dua "pintu" simulasi.
+   PICTURE: dua kartu besar, masing-masing dengan miniatur arsitekturnya (ponsel warga untuk MyData, gerbang API untuk Conecta).
+   COLOUR and TYPE: navy #18254f dominan, kuning #f5ad1b aksen, abu terang #ebeff2; Albert Sans seperti template.
+   LAYOUT: pita navy berisi judul, dua kartu simulasi berdampingan, lalu cara memakai dan perbandingan singkat; menumpuk di layar sempit. */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0c1326);--ink:light-dark(#18254f,#e8ecf6);--body:light-dark(#2b3445,#c9d0dd);--mute:light-dark(#5b6472,#9aa4b6);
+--navy:#18254f;--yel:#f5ad1b;--soft:light-dark(#ebeff2,#141d36);--card:light-dark(#fff,#111a31);--line:light-dark(#d5dce6,#26324f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--body);font:16px/1.6 "Albert Sans",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(28px,4vw,64px) max(5vw,16px)}
+.wrap{max-width:1180px;margin:0 auto}
+a{color:inherit}
+header{background:var(--navy);color:#fff;position:relative;overflow:hidden}
+header::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;border:28px solid var(--yel);border-radius:50%;opacity:.9}
+.kicker{color:var(--yel);font-weight:600;font-size:15px;margin:0 0 10px}
+h1{font-size:clamp(30px,4.6vw,50px);line-height:1.06;margin:0 0 14px;font-weight:800;max-width:17ch;text-wrap:balance;position:relative;z-index:1}
+header p{max-width:62ch;margin:0;color:#dfe4f1;position:relative;z-index:1}
+.team{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;position:relative;z-index:1}
+.team span{font-size:14px;border:1px solid #ffffff44;border-radius:999px;padding:4px 12px}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:-28px;position:relative;z-index:2}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px #18254f1f}
+.art{background:#ebeff2;aspect-ratio:16/8;display:block}
+.art svg{width:100%;height:100%;display:block}
+.cbody{padding:22px 24px 24px;display:flex;flex-direction:column;gap:10px;flex:1}
+.flag{font-size:14px;font-weight:600;color:var(--mute)}
+h2{font-size:26px;line-height:1.15;margin:0;color:var(--ink);font-weight:800}
+.cbody p{margin:0}
+ul.sc{margin:4px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+ul.sc li{display:flex;gap:10px;font-size:15px}
+ul.sc li b{flex:none;width:24px;height:24px;border-radius:50%;background:var(--navy);color:var(--yel);font-size:13px;display:grid;place-items:center}
+.go{margin-top:auto;padding-top:12px}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:12px 22px;border-radius:999px;background:var(--yel);color:#18254f;font-weight:800;text-decoration:none;transition:transform .15s}
+.btn:hover{transform:translateX(3px)}
+.btn:focus-visible{outline:3px solid var(--navy);outline-offset:3px}
+h3{font-size:22px;color:var(--ink);margin:0 0 14px;font-weight:800}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.how div{background:var(--soft);border-radius:14px;padding:18px}
+.how b{display:block;color:var(--ink);margin-bottom:4px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--mute);font-size:13px;font-weight:600}
+td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
+footer{color:var(--mute);font-size:14px;border-top:1px solid var(--line)}
+@media(max-width:820px){.cards,.how{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7.5em}.stack td::before{content:attr(data-l);float:inline-start;width:7em;margin-inline-start:-7.5em;color:var(--mute);font-weight:600}td:first-child{white-space:normal}}
+@media(prefers-reduced-motion:reduce){.btn{transition:none}}
+</style>
+</head>
+<body>
+<header class="band">
+ <div class="wrap">
+  <p class="kicker">Tugas Pengolahan Data untuk Pemerintahan · DTETI UGM</p>
+  <h1>Simulasi arsitektur pertukaran data pemerintah</h1>
+  <p>Dua simulasi interaktif untuk memahami bagaimana data warga berpindah antarlembaga: model yang dikendalikan warga dari Korea Selatan, dan model gerbang API antarinstansi dari Brasil. Keduanya bisa dibandingkan langsung dengan kondisi Indonesia.</p>
+  <div class="team"><span>Ayu Putri Megawati</span><span>Bagus Banjar Bagaskara</span><span>Semuel Kaseh</span><span>Waode Anti</span></div>
+ </div>
+</header>
+
+<main>
+ <section class="band" style="padding-top:0">
+  <div class="wrap cards">
+   <article class="card">
+    <a class="art" href="mydata-korea.html" aria-label="Buka simulasi MyData Korea Selatan">
+     <svg viewBox="0 0 400 200" role="img" aria-label="Miniatur: ponsel warga di tengah mengarahkan data dari pemegang data ke penerima">
+      <g fill="#fff" stroke="#c9d2de"><rect x="28" y="40" width="96" height="26" rx="6"/><rect x="28" y="78" width="96" height="26" rx="6"/><rect x="28" y="116" width="96" height="26" rx="6"/>
+      <rect x="276" y="56" width="96" height="26" rx="6"/><rect x="276" y="100" width="96" height="26" rx="6"/></g>
+      <g fill="#18254f" font-family="sans-serif" font-size="10" font-weight="600"><text x="40" y="57">Bank</text><text x="40" y="95">Pajak</text><text x="40" y="133">Rumah sakit</text><text x="288" y="73">Aplikasi pilihan</text><text x="288" y="117">Bank lain</text></g>
+      <rect x="168" y="26" width="64" height="122" rx="12" fill="#18254f"/><rect x="175" y="38" width="50" height="98" rx="6" fill="#fff"/>
+      <text x="200" y="80" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="700" fill="#18254f">Warga</text>
+      <text x="200" y="95" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#5b6472">atur izin</text>
+      <g stroke="#f5ad1b" stroke-width="2.5" stroke-dasharray="5 4" fill="none"><path d="M166 87H128"/><path d="M234 87H272"/></g>
+      <path d="M76 160H324" stroke="#18254f" stroke-width="2.5"/><path d="M318 154l8 6-8 6" fill="#18254f"/>
+      <text x="200" y="182" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#18254f">data mengalir lewat API standar</text>
+     </svg>
+    </a>
+    <div class="cbody">
+     <span class="flag">Korea Selatan</span>
+     <h2>MyData</h2>
+     <p>Warga memerintahkan agar datanya dikirim dari bank, kantor pajak, atau rumah sakit ke pihak pilihannya, lewat API standar dengan persetujuan yang bisa dicabut.</p>
+     <ul class="sc">
+      <li><b>1</b>MyData keuangan sampai dasbor terpadu</li>
+      <li><b>2</b>Scraping vs API standar</li>
+      <li><b>3</b>MyData publik ke dompet dokumen bank</li>
+      <li><b>4</b>Kesehatan lewat lembaga perantara</li>
+      <li><b>5</b>Melihat dan mencabut persetujuan</li>
+     </ul>
+     <div class="go"><a class="btn" href="mydata-korea.html">Buka simulasi MyData <span aria-hidden="true">→</span></a></div>
+    </div>
+   </article>
+
+   <article class="card">
+    <a class="art" href="conecta-govbr.html" aria-label="Buka simulasi Conecta gov.br Brasil">
+     <svg viewBox="0 0 400 200" role="img" aria-label="Miniatur: instansi pengguna terhubung ke pengelola data melalui gerbang API Conecta">
+      <g fill="#fff" stroke="#c9d2de"><rect x="24" y="44" width="92" height="26" rx="6"/><rect x="24" y="84" width="92" height="26" rx="6"/><rect x="24" y="124" width="92" height="26" rx="6"/>
+      <rect x="284" y="44" width="92" height="26" rx="6"/><rect x="284" y="84" width="92" height="26" rx="6"/><rect x="284" y="124" width="92" height="26" rx="6"/></g>
+      <g fill="#18254f" font-family="sans-serif" font-size="10" font-weight="600"><text x="36" y="61">Federal</text><text x="36" y="101">Negara bagian</text><text x="36" y="141">Kota</text>
+      <text x="296" y="61">Receita · CPF</text><text x="296" y="101">CadÚnico</text><text x="296" y="141">Alamat</text></g>
+      <rect x="150" y="34" width="100" height="126" rx="10" fill="#18254f"/>
+      <text x="200" y="60" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#f5ad1b">Conecta</text>
+      <g fill="#fff"><rect x="162" y="72" width="76" height="16" rx="3"/><rect x="162" y="94" width="76" height="16" rx="3"/><rect x="162" y="116" width="76" height="16" rx="3"/></g>
+      <g font-family="sans-serif" font-size="8.5" fill="#18254f" text-anchor="middle"><text x="200" y="83">katalog</text><text x="200" y="105">adesão</text><text x="200" y="127">gateway + log</text></g>
+      <g stroke="#f5ad1b" stroke-width="2.5" fill="none"><path d="M118 97H148"/><path d="M252 97H282"/></g>
+      <text x="200" y="184" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#18254f">≈ R$ 8 dihemat per transaksi</text>
+     </svg>
+    </a>
+    <div class="cbody">
+     <span class="flag">Brasil</span>
+     <h2>Conecta gov.br</h2>
+     <p>Instansi mengambil data langsung dari pengelola data lewat satu gerbang API pusat, dengan prosedur akses seragam dan penghematan yang diukur per transaksi.</p>
+     <ul class="sc">
+      <li><b>1</b>Daftar ujian ASN tanpa dokumen</li>
+      <li><b>2</b>Mengajukan akses (adesão)</li>
+      <li><b>3</b>Tiga level berbagi data</li>
+      <li><b>4</b>Conecta+ untuk swasta atas izin warga</li>
+     </ul>
+     <div class="go"><a class="btn" href="conecta-govbr.html">Buka simulasi Conecta <span aria-hidden="true">→</span></a></div>
+    </div>
+   </article>
+  </div>
+ </section>
+
+ <section class="band" style="padding-top:0">
+  <div class="wrap">
+   <h3>Cara memakai simulasi</h3>
+   <div class="how">
+    <div><b>Pilih skenario</b>Tombol di bagian atas setiap simulasi memuat skenario yang berbeda.</div>
+    <div><b>Jalankan langkah demi langkah</b>Tekan "Langkah berikutnya" atau "Putar otomatis". Paket data bergerak di peta dan log pesan terisi.</div>
+    <div><b>Bandingkan dengan Indonesia</b>Tombol "Indonesia" memetakan setiap komponen ke padanannya dan menandai yang sudah ada, sebagian, atau belum ada.</div>
+   </div>
+  </div>
+ </section>
+
+ <section class="band" style="padding-top:0">
+  <div class="wrap">
+   <h3>Sekilas perbandingan</h3>
+   <table class="stack">
+    <thead><tr><th>Dimensi</th><th>MyData Korea</th><th>Conecta Brasil</th><th>Indonesia saat ini</th></tr></thead>
+    <tbody>
+     <tr><td data-l="Dimensi">Pola</td><td data-l="Korea">Portabilitas atas perintah warga</td><td data-l="Brasil">API gateway pusat + katalog</td><td data-l="Indonesia">SPLP (gateway pusat), banyak integrasi bilateral</td></tr>
+     <tr><td data-l="Dimensi">Peran warga</td><td data-l="Korea">Inti arsitektur</td><td data-l="Brasil">Hanya di jalur swasta (Conecta+)</td><td data-l="Indonesia">Belum ada</td></tr>
+     <tr><td data-l="Dimensi">Pelajaran utama</td><td data-l="Korea">API standar wajib, persetujuan standar, portal cabut izin</td><td data-l="Brasil">Prosedur akses seragam, level berbagi, ukur penghematan</td><td data-l="Indonesia">Perbaiki tata kelola SPLP, lalu tambah kendali warga</td></tr>
+    </tbody>
+   </table>
+  </div>
+ </section>
+</main>
+
+<footer class="band" style="padding-block:24px">
+ <div class="wrap">Dibuat untuk tugas mata kuliah Pengolahan Data untuk Pemerintahan, DTETI UGM. Nama lembaga, angka, dan pesan di dalam simulasi adalah contoh yang disederhanakan untuk tujuan pembelajaran.</div>
+</footer>
+</body>
+</html>
